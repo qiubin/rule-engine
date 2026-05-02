@@ -1,5 +1,6 @@
 package com.ruleengine.drools.runtime;
 
+import com.ruleengine.script.DictScriptService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.kie.api.KieServices;
@@ -23,6 +24,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class RuleExecutor {
 
     private final KieServices kieServices;
+    private final DictScriptService dictScriptService;
     private final Map<String, KieContainer> ruleContainerCache = new ConcurrentHashMap<>();
     private final AtomicInteger versionCounter = new AtomicInteger(0);
 
@@ -70,9 +72,10 @@ public class RuleExecutor {
         try {
             kieSession = container.newKieSession();
             
-            // 设置全局变量 result
+            // 设置全局变量 result 和 dictUtils
             Map<String, Object> result = new HashMap<>();
             kieSession.setGlobal("result", result);
+            kieSession.setGlobal("dictUtils", dictScriptService);
             
             // 插入参数
             kieSession.insert(parameters);

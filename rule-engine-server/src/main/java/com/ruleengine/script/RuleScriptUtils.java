@@ -6,8 +6,12 @@ import org.springframework.util.StringUtils;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -168,6 +172,118 @@ public class RuleScriptUtils {
                 log.warn("不支持的操作符: {}", operator);
                 return false;
         }
+    }
+
+    /**
+     * 6. 白名单匹配：校验输入字符串中只含有允许列表中的关键词。
+     * 应用场景：主诉中只含有特定症状，不能出现其他症状。
+     *
+     * 工作原理：
+     * 1. 用 "全部列表" 去识别输入文本中出现了哪些关键词
+     * 2. 检查识别到的关键词是否都在 "允许列表" 中
+     * 3. 如果 "全部列表" 为空，则退化为：检查输入中是否包含至少一个允许列表中的词
+     *
+     * @param input           待校验的字符串
+     * @param allowedKeywords 允许的关键词列表（逗号/顿号分隔）
+     * @param allKeywords     全部关键词列表（逗号/顿号分隔，用于识别文本中出现的所有关键词；若为空，则只做正向包含检查）
+     * @return 输入中只含有允许的关键词时返回 TRUE
+     */
+    public static boolean whitelistMatch(String input, String allowedKeywords, String allKeywords) {
+        if (!StringUtils.hasText(input) || !StringUtils.hasText(allowedKeywords)) {
+            return false;
+        }
+
+        List<String> allowed = parseKeywordList(allowedKeywords);
+        if (allowed.isEmpty()) return false;
+
+        log.debug("白名单匹配开始：输入='{}', 允许列表='{}', 全部列表='{}'", input, allowedKeywords, allKeywords);
+        log.debug("解析后的允许列表：{}，全部列表：{}"
+            , allowed
+            , StringUtils.hasText(allKeywords) ? parseKeywordList(allKeywords) : "(空，使用允许列表)"
+        );
+
+        // 若未提供全部列表，则退化为正向包含检查
+        List<String> all = StringUtils.hasText(allKeywords) ? parseKeywordList(allKeywords) : new ArrayList<>(allowed);
+
+        // 找出输入中匹配到的所有关键词
+        Set<String> foundInInput = new HashSet<>();
+        for (String keyword : all) {
+            if (input.contains(keyword)) {
+                foundInInput.add(keyword);
+                log.debug("在输入中匹配到关键词：'{}'", keyword);
+            }
+        }
+
+        if (foundInInput.isEmpty()) {
+            log.debug("白名单校验失败：输入中未匹配到任何关键词");
+            return false;
+        }
+
+        // 必须至少匹配到一个允许的关键词
+        boolean hasAllowed = foundInInput.stream().anyMatch(found ->
+                allowed.stream().anyMatch(a -> a.equals(found))
+        );
+        if (!hasAllowed) {
+            log.debug("白名单校验失败：输入中未包含任何允许的关键词。匹配到的词：{}，允许列表：{}", foundInInput, allowed);
+            return false;
+        }
+
+        // 若提供了全部列表，则严格检查是否有不允许的关键词
+        if (StringUtils.hasText(allKeywords)) {
+            for (String found : foundInInput) {
+                boolean isAllowed = allowed.stream().anyMatch(a -> a.equals(found));
+                if (!isAllowed) {
+                    log.info("白名单校验失败：发现不允许的关键词 '{}'，输入='{}'", found, input);
+                    return false;
+                }
+            }
+        }
+
+        log.debug("白名单校验通过：输入='{}'", input);
+        return true;
+    }
+
+    /**
+     * 7. 存在性冲突校验：检查两个字段对同一关键词是否存在"一个包含、一个不包含"的矛盾。
+     * 应用场景：门诊主诉提到"糖尿病"但入院主诉未提及；或两个诊断记录中对同一症状描述不一致。
+     *
+     * @param strA     第一个字符串
+     * @param strB     第二个字符串
+     * @param keywords 要检查冲突的关键词列表（逗号分隔）
+     * @return 存在冲突时返回 TRUE
+     */
+    public static boolean existenceConflict(String strA, String strB, String keywords) {
+        if (!StringUtils.hasText(strA) || !StringUtils.hasText(strB) || !StringUtils.hasText(keywords)) {
+            return false;
+        }
+
+        List<String> keys = parseKeywordList(keywords);
+        for (String key : keys) {
+            boolean aHas = strA.contains(key);
+            boolean bHas = strB.contains(key);
+
+            // 一个包含但另一个不包含 = 矛盾
+            if (aHas != bHas) {
+                log.debug("存在性冲突：关键字 '{}', A包含={}, B包含={}", key, aHas, bHas);
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * 辅助方法：将分隔的字符串解析为关键词列表
+     * 支持的分隔符：英文逗号, 中文逗号， 顿号、 分号; 中文分号； 竖线|
+     */
+    private static List<String> parseKeywordList(String keywords) {
+        if (!StringUtils.hasText(keywords)) {
+            return new ArrayList<>();
+        }
+        return Arrays.stream(keywords.split("[,|，、;；]"))
+                .map(String::trim)
+                .filter(s -> !s.isEmpty())
+                .collect(Collectors.toList());
     }
 
     /**

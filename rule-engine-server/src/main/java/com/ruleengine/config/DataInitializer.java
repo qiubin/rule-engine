@@ -10,6 +10,9 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -95,10 +98,39 @@ public class DataInitializer implements CommandLineRunner {
             return;
         }
         saveDictionary("GENDER", "性别", new Object[][]{{"M", "男", "1"}, {"F", "女", "2"}, {"U", "未知", "9"}});
-        saveDictionary("ICD10", "ICD10诊断编码", new Object[][]{{"A01", "伤寒", "A01"}, {"J18", "肺炎", "J18"}, {"I10", "高血压", "I10"}, {"E11", "2型糖尿病", "E11"}});
+        initIcd10Dictionary();
         saveDictionary("DRUG", "药品", new Object[][]{{"PENICILLIN", "青霉素", "PENICILLIN"}, {"CEFTRIAXONE", "头孢曲松", "CEFTRIAXONE"}, {"METFORMIN", "二甲双胍", "METFORMIN"}});
         saveDictionary("NURSING_LEVEL", "护理分级", new Object[][]{{"LEVEL_1", "特级护理", "1"}, {"LEVEL_2", "一级护理", "2"}, {"LEVEL_3", "二级护理", "3"}, {"LEVEL_4", "三级护理", "4"}});
         saveDictionary("FORBIDDEN_TYPE", "禁忌类别", new Object[][]{{"ABSOLUTE", "绝对禁忌", "ABSOLUTE"}, {"RELATIVE", "相对禁忌", "RELATIVE"}, {"WARNING", "预警提醒", "WARNING"}, {"MESSAGE", "消息提醒", "MESSAGE"}});
+    }
+
+    private void initIcd10Dictionary() {
+        Dictionary dict = new Dictionary();
+        dict.setCode("ICD10");
+        dict.setName("ICD10诊断编码");
+        dictionaryRepository.save(dict);
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(
+                getClass().getResourceAsStream("/data/icd10.txt"), StandardCharsets.UTF_8))) {
+            String line;
+            int sort = 1;
+            while ((line = reader.readLine()) != null) {
+                line = line.trim();
+                if (line.isEmpty() || line.startsWith("#")) continue;
+                String[] parts = line.split("\\|", 2);
+                if (parts.length < 2) continue;
+                DictionaryItem di = new DictionaryItem();
+                di.setDictCode("ICD10");
+                di.setItemCode(parts[0]);
+                di.setItemName(parts[1]);
+                di.setItemValue(parts[0]);
+                di.setSortOrder(sort++);
+                di.setDictionary(dict);
+                dictionaryItemRepository.save(di);
+            }
+            log.info("ICD10字典已初始化，共 {} 条", sort - 1);
+        } catch (Exception e) {
+            log.error("ICD10字典初始化失败", e);
+        }
     }
 
     private void saveDictionary(String code, String name, Object[][] items) {
@@ -256,7 +288,7 @@ public class DataInitializer implements CommandLineRunner {
         saveConditionModel(diagnosis.getId(), diagnosisCat.getId(), Collections.singletonList("IN_SET"), ValueSource.PARAM, NodeUsage.CONDITION);
         saveConditionModel(drug.getId(), ordersCat.getId(), Collections.singletonList("IN_SET"), ValueSource.PARAM, NodeUsage.CONDITION);
         saveConditionModel(null, null, Collections.singletonList("=="), ValueSource.PARAM, NodeUsage.RESULT);
-        saveConditionModel(emr.getId(), emrCat.getId(), Arrays.asList("==", "contains", "regex_match"), ValueSource.ADAPTER, NodeUsage.CONDITION);
+        saveConditionModel(emr.getId(), emrCat.getId(), Arrays.asList("==", "contains", "regex_match", "regexMatch", "existenceConflict", "whitelistMatch", "dictMatch"), ValueSource.ADAPTER, NodeUsage.CONDITION);
         saveConditionModel(bp.getId(), vitalCat.getId(), Arrays.asList("==", "!=", ">", "<"), ValueSource.PARAM, NodeUsage.BOTH);
         saveConditionModel(temp.getId(), vitalCat.getId(), Arrays.asList("==", "!=", ">", "<"), ValueSource.PARAM, NodeUsage.BOTH);
         saveConditionModel(null, null, Collections.singletonList("=="), ValueSource.PARAM, NodeUsage.RESULT);

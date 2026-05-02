@@ -8,7 +8,7 @@
 - Java 8（OpenJDK 1.8）
 - Spring Boot 2.7.18
 - Node.js 24 + Vite 5
-- MySQL 8 / H2（双 profile 切换）
+- MySQL 8
 
 **浏览器兼容：** 360Chrome（已做降级兼容处理）
 
@@ -25,7 +25,7 @@
 | HTTP 请求 | axios | REST API 通信 |
 | 后端框架 | Spring Boot 2.7 | RESTful API + JPA |
 | 规则引擎 | Drools 7.x | 动态 DRL 编译与执行 |
-| 数据库 | MySQL 8 / H2 | `DB_PROFILE` 环境变量切换 |
+| 数据库 | MySQL 8 | 环境变量配置 |
 | ORM | Spring Data JPA | `ddl-auto: update` 自动建表 |
 
 ---
@@ -286,7 +286,7 @@ GET    /api/v1/dictionary-items?dictCode={code}
 
 | 决策 | 说明 |
 |------|------|
-| 数据库双 profile | `DB_PROFILE=mysql` 用 MySQL，默认/未设置用 H2，开发测试灵活 |
+| 数据库 | 仅 MySQL，环境变量配置连接信息 |
 | 自动建表 + 数据初始化 | JPA `ddl-auto: update` + `DataInitializer` 启动时自动补齐，零配置启动 |
 | 页面合并 | 数据集+数据元、条件分类+条件 分别合并为单页面，减少导航层级 |
 | 画布不在导航栏 | 规则画布仅通过规则类型页面的"新建规则"/"编辑画布"联动进入，避免用户直接访问无上下文 |
@@ -301,7 +301,6 @@ GET    /api/v1/dictionary-items?dictCode={code}
 
 | 变量 | 默认值 | 说明 |
 |------|--------|------|
-| `DB_PROFILE` | `h2` | 数据库类型：`h2` 或 `mysql` |
 | `MYSQL_HOST` | `localhost` | MySQL 主机 |
 | `MYSQL_PORT` | `3306` | MySQL 端口 |
 | `MYSQL_DB` | `ruleengine` | MySQL 数据库名 |
@@ -317,8 +316,6 @@ GET    /api/v1/dictionary-items?dictCode={code}
 cd rule-engine-server
 ./mvnw clean package -DskipTests
 java -jar target/rule-engine-server-1.0.0-SNAPSHOT.jar
-# 或指定 MySQL
-DB_PROFILE=mysql java -jar target/rule-engine-server-1.0.0-SNAPSHOT.jar
 ```
 
 ### 前端（生产模式，兼容 360Chrome）

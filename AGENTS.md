@@ -22,7 +22,7 @@
 | 后端框架 | Spring Boot | 2.7.18 | Java 8 (OpenJDK 1.8) |
 | 规则引擎 | Drools | 7.74.1.Final | 动态 DRL 编译与执行 |
 | ORM | Spring Data JPA | — | Hibernate 5.6, `ddl-auto: update` |
-| 数据库 | MySQL 8 / H2 | — | 双 profile 切换（默认 **mysql**） |
+| 数据库 | MySQL 8 | — | 仅支持 MySQL |
 | 构建工具 | Maven | 3.x | `mvnw` wrapper 可用 |
 | 前端框架 | React | 18.2 | **Legacy 模式** (`ReactDOM.render`) |
 | 构建工具 | Vite | 5.x | 开发端口 3000，预览端口 5173 |
@@ -60,7 +60,7 @@ rule-engine/
 │   │   │   └── config/          # DroolsConfig：KieServices / KieContainer Bean
 │   │   └── dto/                 # ApiResponse 统一响应封装
 │   └── src/main/resources/
-│       └── application.yml      # 配置文件（双 profile：h2 / mysql）
+│       └── application.yml      # 数据库配置（MySQL）
 ├── rule-engine-ui/              # 前端应用
 │   ├── package.json             # npm 配置
 │   ├── vite.config.js           # Vite 配置（含 /api 代理到 localhost:8081）
@@ -99,7 +99,7 @@ rule-engine/
 - Java 8（OpenJDK 1.8）
 - Maven 3.x（或直接使用 `./mvnw`）
 - Node.js 18+
-- MySQL 8（可选，使用 H2 则无需）
+- MySQL 8
 
 ### 4.2 后端启动
 
@@ -111,9 +111,6 @@ cd rule-engine-server
 ```
 
 - 服务端口：**8081**
-- 默认数据库 profile：**mysql**（`application.yml` 中 `spring.profiles.active: ${DB_PROFILE:mysql}`）
-- 切换 H2：`DB_PROFILE=h2 ./mvnw spring-boot:run`
-- H2 控制台：`http://localhost:8081/h2-console`
 - Actuator：`http://localhost:8081/actuator/health`
 
 ### 4.3 前端启动
@@ -149,17 +146,17 @@ npx vite preview --port 5173 --host
 
 ## 5. 数据库与数据初始化
 
-### 5.1 双 Profile 配置
+### 5.1 数据库配置
 
-`application.yml` 定义了两个 Spring profile：
+使用 MySQL 数据库，连接信息通过环境变量配置：
 
-| Profile | 说明 | 数据源 |
-|---------|------|--------|
-| `mysql`（默认） | 生产/开发环境 | `jdbc:mysql://${MYSQL_HOST:localhost}:${MYSQL_PORT:3306}/${MYSQL_DB:ruleengine}` |
-| `h2` | 演示/测试环境 | 内存数据库 `jdbc:h2:mem:ruleengine` |
-
-MySQL 连接默认账号：`root` / `qiubin78`。可通过环境变量覆盖：
-`MYSQL_HOST`, `MYSQL_PORT`, `MYSQL_DB`, `MYSQL_USER`, `MYSQL_PASSWORD`。
+| 变量 | 默认值 | 说明 |
+|------|--------|------|
+| `MYSQL_HOST` | `localhost` | MySQL 主机 |
+| `MYSQL_PORT` | `3306` | MySQL 端口 |
+| `MYSQL_DB` | `ruleengine` | 数据库名 |
+| `MYSQL_USER` | `root` | 用户名 |
+| `MYSQL_PASSWORD` | `qiubin78` | 密码 |
 
 ### 5.2 自动建表
 
@@ -428,7 +425,6 @@ GET    /dictionary-items?dictCode={code}
 
 | 变量 | 默认值 | 说明 |
 |------|--------|------|
-| `DB_PROFILE` | `mysql` | 数据库类型：`h2` 或 `mysql` |
 | `MYSQL_HOST` | `localhost` | MySQL 主机 |
 | `MYSQL_PORT` | `3306` | MySQL 端口 |
 | `MYSQL_DB` | `ruleengine` | MySQL 数据库名 |

@@ -17,12 +17,14 @@ public class DrlCompiler {
 
     private final ObjectMapper objectMapper;
 
-    private static final String DRL_TEMPLATE = 
+    private static final String DRL_TEMPLATE =
             "package rules.%s;\n" +
             "import java.util.Map;\n" +
             "import java.util.HashMap;\n" +
             "import com.ruleengine.script.RuleScriptUtils;\n" +
+            "import com.ruleengine.script.DictScriptService;\n" +
             "global java.util.Map result\n" +
+            "global com.ruleengine.script.DictScriptService dictUtils\n" +
             "\n" +
             "%s\n";
 
@@ -205,7 +207,24 @@ public class DrlCompiler {
         JsonNode extra2Node = config.get("extraValue2");
         String extraValue2 = extra2Node != null && !extra2Node.isNull() ? extra2Node.asText() : "";
         extraValue2 = extraValue2.replace("\\", "\\\\").replace("\"", "\\\"");
-        
+
+        // 读取字典编码配置
+        JsonNode dictCodeNode = config.get("dictCode");
+        String dictCode = dictCodeNode != null && !dictCodeNode.isNull() ? dictCodeNode.asText() : "";
+        dictCode = dictCode.replace("\\", "\\\\").replace("\"", "\\\"");
+
+        JsonNode allDictCodeNode = config.get("allDictCode");
+        String allDictCode = allDictCodeNode != null && !allDictCodeNode.isNull() ? allDictCodeNode.asText() : "";
+        allDictCode = allDictCode.replace("\\", "\\\\").replace("\"", "\\\"");
+
+        JsonNode dictAttrNode = config.get("dictAttr");
+        String dictAttr = dictAttrNode != null && !dictAttrNode.isNull() ? dictAttrNode.asText() : "itemName";
+        dictAttr = dictAttr.replace("\\", "\\\\").replace("\"", "\\\"");
+
+        JsonNode allDictAttrNode = config.get("allDictAttr");
+        String allDictAttr = allDictAttrNode != null && !allDictAttrNode.isNull() ? allDictAttrNode.asText() : "itemName";
+        allDictAttr = allDictAttr.replace("\\", "\\\\").replace("\"", "\\\"");
+
         if ("==".equals(operator) || "equals".equals(operator)) {
             return String.format("$param.get(\"%s\") != null && \"%s\".equals(String.valueOf($param.get(\"%s\")))", field, valueStr, field);
         } else if ("!=".equals(operator) || "notEquals".equals(operator)) {
@@ -220,17 +239,40 @@ public class DrlCompiler {
             return String.format("$param.get(\"%s\") != null && Double.parseDouble(String.valueOf($param.get(\"%s\"))) <= %s", field, field, valueStr);
         } else if ("contains".equals(operator)) {
             return String.format("$param.get(\"%s\") != null && String.valueOf($param.get(\"%s\")).contains(\"%s\")", field, field, valueStr);
+        } else if ("regex_match".equals(operator)) {
+            return String.format("$param.get(\"%s\") != null && String.valueOf($param.get(\"%s\")).matches(\"%s\")", field, field, valueStr);
         } else if ("regexMatch".equals(operator)) {
+            if (!dictCode.isEmpty()) {
+                return String.format("dictUtils.regexMatch((String)$param.get(\"%s\"), \"%s\", \"%s\")", field, dictCode, dictAttr);
+            }
             return String.format("RuleScriptUtils.regexMatch((String)$param.get(\"%s\"), \"%s\")", field, valueStr);
         } else if ("multiRegexMatch".equals(operator)) {
-            String antiBioticsSet = valueStr;
             String courseRecordField = !extraValue1.isEmpty() ? extraValue1 : "courseRecord";
-            return String.format("RuleScriptUtils.multiConditionRegexMatch(\"%s\", (String)$param.get(\"%s\"), (String)$param.get(\"%s\"))", antiBioticsSet, field, courseRecordField);
+            if (!dictCode.isEmpty()) {
+                return String.format("dictUtils.multiConditionRegexMatch(\"%s\", \"%s\", (String)$param.get(\"%s\"), (String)$param.get(\"%s\"))", dictCode, dictAttr, field, courseRecordField);
+            }
+            return String.format("RuleScriptUtils.multiConditionRegexMatch(\"%s\", (String)$param.get(\"%s\"), (String)$param.get(\"%s\"))", valueStr, field, courseRecordField);
         } else if ("contradictionCheck".equals(operator)) {
+            String str2Field = !extraValue2.isEmpty() ? extraValue2 : "入院主诉";
+            if (!dictCode.isEmpty() && !allDictCode.isEmpty()) {
+                return String.format("dictUtils.contradictionCheck((String)$param.get(\"%s\"), (String)$param.get(\"%s\"), \"%s\", \"%s\", \"%s\", \"%s\")", field, str2Field, dictCode, dictAttr, allDictCode, allDictAttr);
+            }
             String negativeWords = valueStr;
             String keywords = extraValue1;
-            String str2Field = !extraValue2.isEmpty() ? extraValue2 : "入院主诉";
             return String.format("RuleScriptUtils.contradictionCheck((String)$param.get(\"%s\"), (String)$param.get(\"%s\"), \"%s\", \"%s\")", field, str2Field, negativeWords, keywords);
+        } else if ("existenceConflict".equals(operator)) {
+            String str2Field = !extraValue1.isEmpty() ? extraValue1 : "入院主诉";
+            if (!dictCode.isEmpty()) {
+                return String.format("dictUtils.existenceConflict((String)$param.get(\"%s\"), (String)$param.get(\"%s\"), \"%s\", \"%s\")", field, str2Field, dictCode, dictAttr);
+            }
+            String keywords = valueStr;
+            return String.format("RuleScriptUtils.existenceConflict((String)$param.get(\"%s\"), (String)$param.get(\"%s\"), \"%s\")", field, str2Field, keywords);
+        } else if ("whitelistMatch".equals(operator)) {
+            String allowedKeywords = valueStr;
+            String allKeywords = extraValue1;
+            return String.format("RuleScriptUtils.whitelistMatch((String)$param.get(\"%s\"), \"%s\", \"%s\")", field, allowedKeywords, allKeywords);
+        } else if ("dictMatch".equals(operator)) {
+            return String.format("dictUtils.whitelistMatch((String)$param.get(\"%s\"), \"%s\", \"%s\", \"%s\")", field, dictCode, allDictCode, dictAttr);
         } else if ("dataCheck".equals(operator)) {
             String op = valueStr;
             String thresholdStr = extraValue1;

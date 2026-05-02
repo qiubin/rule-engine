@@ -3,12 +3,13 @@ import { Drawer, Form, Input, Select, Button, Radio, Tag } from 'antd'
 import { SaveOutlined } from '@ant-design/icons'
 import axios from 'axios'
 
-const { Option } = Select
+const { Option, OptGroup } = Select
 
 export default function ConfigPanel({ open, onClose, node, onUpdate }) {
   const [form] = Form.useForm()
   const [categories, setCategories] = useState([])
   const [conditions, setConditions] = useState([])
+  const [dictionaries, setDictionaries] = useState([])
   const [selectedCategoryId, setSelectedCategoryId] = useState(null)
   const [selectedOperator, setSelectedOperator] = useState(null)
 
@@ -22,7 +23,7 @@ export default function ConfigPanel({ open, onClose, node, onUpdate }) {
       setSelectedOperator(node.data?.conditionConfig?.operator || null)
       if (node.type === 'condition' || node.type === 'result') {
         fetchCategories()
-        // 如果有已保存的分类，加载该分类下的条件
+        fetchDictionaries()
         const savedCategoryId = node.data?.conditionConfig?.categoryId || node.data?.resultConfig?.categoryId
         if (savedCategoryId) {
           setSelectedCategoryId(savedCategoryId)
@@ -42,12 +43,18 @@ export default function ConfigPanel({ open, onClose, node, onUpdate }) {
   const fetchConditionsByCategory = async (categoryId) => {
     try {
       const res = await axios.get(`/api/v1/condition-models/by-category/${categoryId}`)
-      // 根据节点类型过滤
       const nodeUsage = node?.type === 'condition' ? 'CONDITION' : 'RESULT'
       const filtered = res.data.filter(m =>
         m.nodeUsage === nodeUsage || m.nodeUsage === 'BOTH'
       )
       setConditions(filtered)
+    } catch (e) {}
+  }
+
+  const fetchDictionaries = async () => {
+    try {
+      const res = await axios.get('/api/v1/dictionaries')
+      setDictionaries(res.data)
     } catch (e) {}
   }
 
@@ -60,7 +67,6 @@ export default function ConfigPanel({ open, onClose, node, onUpdate }) {
   const onConditionChange = (modelId) => {
     const model = conditions.find(m => m.id === modelId)
     if (model && model.dataElementId) {
-      // field 自动来自数据元编码
       form.setFieldsValue({
         field: model.code,
         dataType: model.dataType,
@@ -81,6 +87,10 @@ export default function ConfigPanel({ open, onClose, node, onUpdate }) {
         value: values.value,
         extraValue1: values.extraValue1,
         extraValue2: values.extraValue2,
+        dictCode: values.dictCode,
+        allDictCode: values.allDictCode,
+        dictAttr: values.dictAttr,
+        allDictAttr: values.allDictAttr,
         valueSource: values.valueSource,
         conditionModelId: values.conditionModelId,
         categoryId: values.categoryId,
@@ -97,6 +107,28 @@ export default function ConfigPanel({ open, onClose, node, onUpdate }) {
 
     onUpdate(node.id, newData)
   }
+
+  const DictSelect = ({ name, label }) => (
+    <Form.Item name={name} label={label} style={{ marginTop: -8 }}>
+      <Select placeholder="选择字典" allowClear>
+        {dictionaries.map(dict => (
+          <Option key={dict.code} value={dict.code}>
+            {dict.name} ({dict.items?.length || 0}项)
+          </Option>
+        ))}
+      </Select>
+    </Form.Item>
+  )
+
+  const DictAttrSelect = ({ name }) => (
+    <Form.Item name={name} label="匹配属性" style={{ marginTop: -8 }}>
+      <Select placeholder="默认名称" allowClear>
+        <Option value="itemName">名称</Option>
+        <Option value="itemCode">编码</Option>
+        <Option value="itemValue">值</Option>
+      </Select>
+    </Form.Item>
+  )
 
   const renderConditionForm = () => (
     <>
@@ -127,40 +159,78 @@ export default function ConfigPanel({ open, onClose, node, onUpdate }) {
       </Form.Item>
       <Form.Item name="operator" label="计算符" rules={[{ required: true }]}>
         <Select placeholder="选择计算符" onChange={(val) => setSelectedOperator(val)}>
-          <Option value="==">等于</Option>
-          <Option value="!=">不等于</Option>
-          <Option value=">">大于</Option>
-          <Option value="<">小于</Option>
-          <Option value="contains">包含</Option>
-          <Option value="regex_match">原生正则</Option>
-          <Option value="IN_SET">在集合中</Option>
-          <Option value="regexMatch">单正则匹配(脚本)</Option>
-          <Option value="multiRegexMatch">多条件正则(脚本)</Option>
-          <Option value="contradictionCheck">矛盾判断(脚本)</Option>
-          <Option value="dataCheck">数据判断(脚本)</Option>
-          <Option value="timeCheck">时间判断(脚本)</Option>
+          <OptGroup label="通用计算符">
+            <Option value="==">等于</Option>
+            <Option value="!=">不等于</Option>
+            <Option value=">">大于</Option>
+            <Option value="<">小于</Option>
+            <Option value="contains">包含</Option>
+            <Option value="regex_match">原生正则</Option>
+            <Option value="IN_SET">在集合中</Option>
+          </OptGroup>
+          <OptGroup label="脚本计算符">
+            <Option value="regexMatch">单正则匹配</Option>
+            <Option value="multiRegexMatch">多条件正则</Option>
+            <Option value="contradictionCheck">矛盾判断</Option>
+            <Option value="existenceConflict">存在性冲突</Option>
+            <Option value="whitelistMatch">白名单匹配</Option>
+            <Option value="dictMatch">字典匹配</Option>
+            <Option value="dataCheck">数据判断</Option>
+            <Option value="timeCheck">时间判断</Option>
+          </OptGroup>
         </Select>
       </Form.Item>
       {selectedOperator === 'multiRegexMatch' ? (
         <>
-          <Form.Item name="value" label="抗菌药物集合" rules={[{ required: true }]}>
-            <Input placeholder="如: 青霉素,头孢" />
+          <Form.Item name="value" label="抗菌药物集合">
+            <Input placeholder="手工输入，如: 青霉素,头孢" />
           </Form.Item>
+          <DictSelect name="dictCode" label="或选择字典" />
+          <DictAttrSelect name="dictAttr" />
           <Form.Item name="extraValue1" label="病程记录字段名" rules={[{ required: true }]}>
             <Input placeholder="如: courseRecord" />
           </Form.Item>
         </>
       ) : selectedOperator === 'contradictionCheck' ? (
         <>
-          <Form.Item name="value" label="否定词库" rules={[{ required: true }]}>
-            <Input placeholder="如: 否认,无" />
+          <Form.Item name="value" label="否定词库">
+            <Input placeholder="手工输入，如: 否认,无" />
           </Form.Item>
-          <Form.Item name="extraValue1" label="关键字库" rules={[{ required: true }]}>
-            <Input placeholder="如: 发热,头痛" />
+          <DictSelect name="dictCode" label="或选择否定词字典" />
+          <DictAttrSelect name="dictAttr" />
+          <Form.Item name="extraValue1" label="关键字库">
+            <Input placeholder="手工输入，如: 发热,头痛" />
           </Form.Item>
+          <DictSelect name="allDictCode" label="或选择关键字字典" />
+          <DictAttrSelect name="allDictAttr" />
           <Form.Item name="extraValue2" label="对比字段名" rules={[{ required: true }]}>
             <Input placeholder="如: 入院主诉" />
           </Form.Item>
+        </>
+      ) : selectedOperator === 'existenceConflict' ? (
+        <>
+          <Form.Item name="value" label="冲突关键词列表">
+            <Input placeholder="手工输入，如: 糖尿病,高血压,发热" />
+          </Form.Item>
+          <DictSelect name="dictCode" label="或选择关键词字典" />
+          <DictAttrSelect name="dictAttr" />
+          <Form.Item name="extraValue1" label="对比字段名" rules={[{ required: true }]}>
+            <Input placeholder="如: 入院主诉" />
+          </Form.Item>
+        </>
+      ) : selectedOperator === 'whitelistMatch' ? (
+        <>
+          <Form.Item name="value" label="允许的关键词列表">
+            <Input placeholder="手工输入，如: 头痛,发热" />
+          </Form.Item>
+          <Form.Item name="extraValue1" label="全部关键词列表">
+            <Input placeholder="手工输入，如: 头痛,发热,咳嗽,流涕；留空则只做正向包含检查" />
+          </Form.Item>
+        </>
+      ) : selectedOperator === 'dictMatch' ? (
+        <>
+          <DictSelect name="dictCode" label="允许关键词字典" />
+          <DictAttrSelect name="dictAttr" />
         </>
       ) : selectedOperator === 'dataCheck' ? (
         <>
@@ -191,9 +261,13 @@ export default function ConfigPanel({ open, onClose, node, onUpdate }) {
           </Form.Item>
         </>
       ) : selectedOperator === 'regexMatch' ? (
-        <Form.Item name="value" label="正则表达式" rules={[{ required: true }]}>
-          <Input placeholder="如: ^[a-z]+$" />
-        </Form.Item>
+        <>
+          <Form.Item name="value" label="正则表达式">
+            <Input placeholder="如: ^[a-z]+$" />
+          </Form.Item>
+          <DictSelect name="dictCode" label="或选择正则字典" />
+          <DictAttrSelect name="dictAttr" />
+        </>
       ) : (
         <Form.Item name="value" label="条件值" rules={[{ required: true }]}>
           <Input placeholder="如: 65" />

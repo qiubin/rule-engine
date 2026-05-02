@@ -34,7 +34,6 @@ start_backend() {
     $MVN_CMD clean install -DskipTests
     $MVN_CMD spring-boot:run &
     echo "后端服务已启动在 http://localhost:8081"
-    echo "H2 控制台: http://localhost:8081/h2-console"
 }
 
 start_frontend() {

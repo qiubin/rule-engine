@@ -91,7 +91,7 @@ rule-engine/
 - Java 17+
 - Maven 3.9+
 - Node.js 18+
-- MySQL 8.0（或使用内置 H2）
+- MySQL 8.0
 
 ### 1. 启动后端
 
@@ -103,7 +103,6 @@ mvn spring-boot:run
 
 后端服务启动在 `http://localhost:8080`
 
-- H2 控制台：`http://localhost:8080/h2-console`
 - API 文档：通过 Controller 代码查看
 
 ### 2. 启动前端
@@ -231,7 +230,7 @@ conditionModelService.save(model);
 
 ## 路线图
 
-- [x] 后端基础架构（Spring Boot + JPA + H2）
+- [x] 后端基础架构（Spring Boot + JPA + MySQL）
 - [x] Drools 动态规则编译与执行
 - [x] ReactFlow 可视化画布（基础节点 + 连线）
 - [x] 条件节点 / 结果节点配置面板
