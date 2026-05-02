@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="google" content="notranslate" />
+    <title>规则引擎 - 可视化画布</title>
+    <script>
+      // 阻止第三方脚本（如浏览器扩展）修改 root 元素，防止 React DOM 不同步
+      (function() {
+        var root = document.getElementById('root');
+        if (!root) return;
+        var observer = new MutationObserver(function(mutations) {
+          mutations.forEach(function(m) {
+            m.addedNodes.forEach(function(node) {
+              // 移除所有非 React 注入的 script 和 iframe
+              if (node.nodeType === 1 && (node.tagName === 'SCRIPT' || node.tagName === 'IFRAME')) {
+                if (!node.getAttribute('data-reactroot') && !node.src?.includes('localhost')) {
+                  node.remove();
+                }
+              }
+            });
+          });
+        });
+        observer.observe(root, { childList: true, subtree: true });
+      })();
+    </script>
+  </head>
+  <body>
+    <noscript><h1 style="padding:40px">请启用 JavaScript 以使用本应用</h1></noscript>
+    <div id="root"><h1 style="padding:40px">正在加载...</h1></div>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>

@@ -1,0 +1,12 @@
+.react-flow__node.selected {
+  box-shadow: 0 0 0 2px #1890ff !important;
+}
+
+.react-flow__edge-path {
+  stroke-width: 2;
+}
+
+.react-flow__edge.selected .react-flow__edge-path {
+  stroke: #1890ff;
+  stroke-width: 3;
+}

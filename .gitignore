@@ -1,0 +1,30 @@
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.iml
+*.swp
+*.swo
+
+# Java/Maven
+rule-engine-server/target/
+rule-engine-server/.mvn/
+rule-engine-server/*.log
+
+# Node.js
+rule-engine-ui/node_modules/
+rule-engine-ui/dist/
+rule-engine-ui/.env.local
+rule-engine-ui/.env.*.local
+
+# Logs
+*.log
+start.log
+
+# Misc
+*.class
+*.jar
+*.war

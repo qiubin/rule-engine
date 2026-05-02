@@ -1,0 +1,85 @@
+.node {
+  min-width: 140px;
+  border-radius: 8px;
+  border: 2px solid #ccc;
+  background: #fff;
+  text-align: center;
+  font-size: 13px;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+  cursor: pointer;
+  transition: box-shadow 0.2s;
+}
+
+.node:hover {
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+.node-header {
+  padding: 4px 8px;
+  border-radius: 6px 6px 0 0;
+  font-size: 11px;
+  font-weight: bold;
+  color: #fff;
+}
+
+.node-content {
+  padding: 8px 12px;
+}
+
+.node-title {
+  font-weight: 500;
+  margin-bottom: 4px;
+}
+
+.node-detail {
+  font-size: 11px;
+  color: #666;
+  max-width: 180px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.start-node {
+  border-color: #52c41a;
+  background: #f6ffed;
+}
+.start-node .node-content {
+  color: #52c41a;
+  font-weight: bold;
+}
+
+.condition-node {
+  border-color: #1890ff;
+  background: #e6f7ff;
+}
+.condition-node .node-header {
+  background: #1890ff;
+}
+
+.result-node {
+  border-color: #faad14;
+  background: #fffbe6;
+}
+.result-node .node-header {
+  background: #faad14;
+}
+
+.logic-node {
+  border-color: #722ed1;
+  background: #f9f0ff;
+  min-width: 60px;
+}
+.logic-node .node-content {
+  color: #722ed1;
+  font-weight: bold;
+}
+
+.end-node {
+  border-color: #ff4d4f;
+  background: #fff1f0;
+}
+.end-node .node-content {
+  color: #ff4d4f;
+  font-weight: bold;
+}
