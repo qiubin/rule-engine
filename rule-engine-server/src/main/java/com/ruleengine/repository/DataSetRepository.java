@@ -9,4 +9,5 @@ import java.util.Optional;
 @Repository
 public interface DataSetRepository extends JpaRepository<DataSet, Long> {
     Optional<DataSet> findByCode(String code);
+    Optional<DataSet> findByCatL3Code(String catL3Code);
 }

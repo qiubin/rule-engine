@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { Card, Table, Button, Modal, Form, Input, Select, Tag, message, Popconfirm } from 'antd'
-import { PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons'
+import { PlusOutlined, EditOutlined, DeleteOutlined, SyncOutlined } from '@ant-design/icons'
 import axios from 'axios'
 
 const CAT_API = '/api/v1/condition-model-categories'
@@ -121,6 +121,16 @@ export default function ConditionModelMgr() {
     }
   }
 
+  const handleSync = async () => {
+    try {
+      const res = await axios.post(`${CM_API}/sync`)
+      message.success(`同步完成：${res.data.categoryCount} 个分类，${res.data.conditionCount} 个条件`)
+      fetchData()
+    } catch (e) {
+      message.error(e.response?.data?.message || '同步失败')
+    }
+  }
+
   const onDataElementChange = (deId) => {
     const de = dataElements.find(d => d.id === deId)
     if (de) {
@@ -226,6 +236,16 @@ export default function ConditionModelMgr() {
       <Card title="条件管理" size="small"
         extra={
           <div style={{ display: 'flex', gap: 8 }}>
+            <Popconfirm
+              title="确认同步?"
+              description="同步将清空现有条件分类和条件，并从数据集/数据元重新构建。已有画布中的条件引用将失效，是否继续？"
+              onConfirm={handleSync}
+              okText="继续"
+              cancelText="取消"
+              okButtonProps={{ danger: true }}
+            >
+              <Button danger size="small" icon={<SyncOutlined />}>同步</Button>
+            </Popconfirm>
             <Select
               placeholder="选择分类筛选"
               style={{ width: 200 }}

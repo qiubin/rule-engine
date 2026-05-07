@@ -29,6 +29,9 @@ public class RuleService {
     private final DrlCompiler drlCompiler;
     private final RuleExecutor ruleExecutor;
     private final ObjectMapper objectMapper;
+    private final RuleExecutionLogService ruleExecutionLogService;
+    private final RuleVersionService ruleVersionService;
+    private final com.ruleengine.drools.adapter.EmrDataService emrDataService;
 
     public List<Rule> findAll() {
         return ruleRepository.findAll();
@@ -82,8 +85,12 @@ public class RuleService {
         JsonNode canvasNode = objectMapper.readTree(canvasData);
         String drl = drlCompiler.compile(rule.getCode(), canvasNode);
         rule.setDroolsDrl(drl);
-        log.info("规则 [{}] 画布已保存，DRL 已生成", rule.getCode());
 
+        Integer nextVersion = ruleVersionService.getNextVersion(rule.getId());
+        ruleVersionService.createVersion(rule.getId(), nextVersion, canvasData, drl, null);
+        rule.setVersion(String.valueOf(nextVersion));
+
+        log.info("规则 [{}] 画布已保存，版本 {}，DRL 已生成", rule.getCode(), nextVersion);
         return ruleRepository.save(rule);
     }
 
@@ -109,7 +116,35 @@ public class RuleService {
         if (rule.getStatus() != RuleStatus.PUBLISHED) {
             throw new RuntimeException("规则未发布，无法执行");
         }
-        return ruleExecutor.execute(ruleCode, rule.getDroolsDrl(), parameters);
+        parameters = enrichWithHisData(parameters);
+        long start = System.currentTimeMillis();
+        String status = "SUCCESS";
+        String errorMessage = null;
+        Map<String, Object> result = null;
+        try {
+            result = ruleExecutor.execute(ruleCode, rule.getDroolsDrl(), parameters);
+            if (!Boolean.TRUE.equals(result.get("matched"))) {
+                status = "NO_HIT";
+            }
+        } catch (Exception e) {
+            status = "ERROR";
+            errorMessage = e.getMessage();
+            throw e;
+        } finally {
+            long duration = System.currentTimeMillis() - start;
+            int firedCount = result != null ? (int) result.getOrDefault("firedRules", 0) : 0;
+            List<String> hitNodeIds = result != null ? ruleExecutionLogService.extractHitNodeIds(result) : new ArrayList<>();
+            try {
+                ruleExecutionLogService.saveLog(
+                        rule.getId(), rule.getCode(), rule.getVersion(),
+                        parameters, result != null ? result : new HashMap<>(),
+                        hitNodeIds, firedCount, duration, status, errorMessage
+                );
+            } catch (Exception logEx) {
+                log.warn("保存执行日志失败: {}", logEx.getMessage());
+            }
+        }
+        return result;
     }
 
     @SneakyThrows
@@ -124,7 +159,38 @@ public class RuleService {
         if (drl == null || drl.isEmpty()) {
             throw new RuntimeException("规则画布为空，无法生成 DRL");
         }
-        return ruleExecutor.execute(rule.getCode(), drl, parameters);
+        // 测试执行时强制重新编译并缓存最新 DRL，避免使用旧缓存版本
+        ruleExecutor.compileAndCache(rule.getCode(), drl);
+
+        parameters = enrichWithHisData(parameters);
+        long start = System.currentTimeMillis();
+        String status = "SUCCESS";
+        String errorMessage = null;
+        Map<String, Object> result = null;
+        try {
+            result = ruleExecutor.execute(rule.getCode(), drl, parameters);
+            if (!Boolean.TRUE.equals(result.get("matched"))) {
+                status = "NO_HIT";
+            }
+        } catch (Exception e) {
+            status = "ERROR";
+            errorMessage = e.getMessage();
+            throw e;
+        } finally {
+            long duration = System.currentTimeMillis() - start;
+            int firedCount = result != null ? (int) result.getOrDefault("firedRules", 0) : 0;
+            List<String> hitNodeIds = result != null ? ruleExecutionLogService.extractHitNodeIds(result) : new ArrayList<>();
+            try {
+                ruleExecutionLogService.saveLog(
+                        rule.getId(), rule.getCode(), rule.getVersion(),
+                        parameters, result != null ? result : new HashMap<>(),
+                        hitNodeIds, firedCount, duration, status, errorMessage
+                );
+            } catch (Exception logEx) {
+                log.warn("保存执行日志失败: {}", logEx.getMessage());
+            }
+        }
+        return result;
     }
 
     @SneakyThrows
@@ -135,6 +201,10 @@ public class RuleService {
 
         for (Long id : ruleIds) {
             Rule rule = null;
+            long start = System.currentTimeMillis();
+            String logStatus = "SUCCESS";
+            String logError = null;
+            Map<String, Object> result = null;
             try {
                 rule = findById(id);
                 if (rule.getCanvasData() == null || rule.getCanvasData().isEmpty()) {
@@ -145,8 +215,11 @@ public class RuleService {
                 if (drl == null || drl.isEmpty()) {
                     continue;
                 }
-                Map<String, Object> result = ruleExecutor.execute(rule.getCode(), drl, parameters);
+                result = ruleExecutor.execute(rule.getCode(), drl, parameters);
                 executedCount++;
+                if (!Boolean.TRUE.equals(result.get("matched"))) {
+                    logStatus = "NO_HIT";
+                }
 
                 Map<String, Object> summary = new HashMap<>();
                 summary.put("ruleId", rule.getId());
@@ -162,6 +235,8 @@ public class RuleService {
                 }
                 results.add(summary);
             } catch (Exception e) {
+                logStatus = "ERROR";
+                logError = e.getMessage();
                 log.warn("规则 [{}] 批量测试执行失败: {}", rule != null ? rule.getCode() : id, e.getMessage());
                 Map<String, Object> summary = new HashMap<>();
                 summary.put("ruleId", id);
@@ -172,6 +247,21 @@ public class RuleService {
                 summary.put("firedRules", 0);
                 summary.put("error", e.getMessage());
                 results.add(summary);
+            } finally {
+                if (rule != null) {
+                    long duration = System.currentTimeMillis() - start;
+                    int firedCount = result != null ? (int) result.getOrDefault("firedRules", 0) : 0;
+                    List<String> hitNodeIds = result != null ? ruleExecutionLogService.extractHitNodeIds(result) : new ArrayList<>();
+                    try {
+                        ruleExecutionLogService.saveLog(
+                                rule.getId(), rule.getCode(), rule.getVersion(),
+                                parameters, result != null ? result : new HashMap<>(),
+                                hitNodeIds, firedCount, duration, logStatus, logError
+                        );
+                    } catch (Exception logEx) {
+                        log.warn("保存执行日志失败: {}", logEx.getMessage());
+                    }
+                }
             }
         }
 
@@ -182,6 +272,22 @@ public class RuleService {
         response.put("details", results);
         response.put("parameters", parameters);
         return response;
+    }
+
+    private Map<String, Object> enrichWithHisData(Map<String, Object> parameters) {
+        if (parameters == null) {
+            parameters = new HashMap<>();
+        }
+        if (parameters.containsKey("patientId")) {
+            String patientId = String.valueOf(parameters.get("patientId"));
+            String admissionId = parameters.containsKey("admissionId")
+                    ? String.valueOf(parameters.get("admissionId")) : null;
+            Map<String, Object> emrData = emrDataService.fetchPatientData(patientId, admissionId);
+            // 传入参数优先级高于 HIS 数据（方便测试时覆盖）
+            emrData.putAll(parameters);
+            parameters = emrData;
+        }
+        return parameters;
     }
 
     private void validateRuleType(Rule rule) {

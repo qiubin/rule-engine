@@ -55,6 +55,53 @@ public class DataInitializer implements CommandLineRunner {
         }
     }
 
+    private void ensureExecutionLogTableExists() {
+        try {
+            jdbcTemplate.queryForObject("SELECT COUNT(*) FROM rule_execution_log", Integer.class);
+        } catch (Exception e) {
+            log.info("Creating missing 'rule_execution_log' table...");
+            jdbcTemplate.execute(
+                "CREATE TABLE IF NOT EXISTS rule_execution_log (" +
+                "  id BIGINT AUTO_INCREMENT PRIMARY KEY," +
+                "  rule_id BIGINT NOT NULL," +
+                "  rule_code VARCHAR(64)," +
+                "  rule_version VARCHAR(16)," +
+                "  params_json LONGTEXT," +
+                "  output_json LONGTEXT," +
+                "  hit_node_ids LONGTEXT," +
+                "  fired_count INT," +
+                "  duration_ms BIGINT," +
+                "  status VARCHAR(16) NOT NULL," +
+                "  error_message LONGTEXT," +
+                "  executed_at DATETIME DEFAULT CURRENT_TIMESTAMP," +
+                "  INDEX idx_rule_id (rule_id)" +
+                ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4"
+            );
+            log.info("'rule_execution_log' table created.");
+        }
+    }
+
+    private void ensureRuleVersionTableExists() {
+        try {
+            jdbcTemplate.queryForObject("SELECT COUNT(*) FROM rule_version", Integer.class);
+        } catch (Exception e) {
+            log.info("Creating missing 'rule_version' table...");
+            jdbcTemplate.execute(
+                "CREATE TABLE IF NOT EXISTS rule_version (" +
+                "  id BIGINT AUTO_INCREMENT PRIMARY KEY," +
+                "  rule_id BIGINT NOT NULL," +
+                "  version INT NOT NULL," +
+                "  canvas_data LONGTEXT," +
+                "  drools_drl LONGTEXT," +
+                "  change_note VARCHAR(255)," +
+                "  created_at DATETIME DEFAULT CURRENT_TIMESTAMP," +
+                "  INDEX idx_rule_id (rule_id)" +
+                ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4"
+            );
+            log.info("'rule_version' table created.");
+        }
+    }
+
     private void migrateDataElementIds() {
         // 反向迁移：把 condition_model_data_elements 中的数据复制回 condition_model.data_element_id
         try {
@@ -79,6 +126,8 @@ public class DataInitializer implements CommandLineRunner {
     @Transactional
     public void run(String... args) {
         ensureTableExists();
+        ensureExecutionLogTableExists();
+        ensureRuleVersionTableExists();
         migrateDataElementIds();
         log.info("开始检查并初始化基础数据...");
 
@@ -99,9 +148,152 @@ public class DataInitializer implements CommandLineRunner {
         }
         saveDictionary("GENDER", "性别", new Object[][]{{"M", "男", "1"}, {"F", "女", "2"}, {"U", "未知", "9"}});
         initIcd10Dictionary();
-        saveDictionary("DRUG", "药品", new Object[][]{{"PENICILLIN", "青霉素", "PENICILLIN"}, {"CEFTRIAXONE", "头孢曲松", "CEFTRIAXONE"}, {"METFORMIN", "二甲双胍", "METFORMIN"}});
+        initMedicalDictionaries();
         saveDictionary("NURSING_LEVEL", "护理分级", new Object[][]{{"LEVEL_1", "特级护理", "1"}, {"LEVEL_2", "一级护理", "2"}, {"LEVEL_3", "二级护理", "3"}, {"LEVEL_4", "三级护理", "4"}});
         saveDictionary("FORBIDDEN_TYPE", "禁忌类别", new Object[][]{{"ABSOLUTE", "绝对禁忌", "ABSOLUTE"}, {"RELATIVE", "相对禁忌", "RELATIVE"}, {"WARNING", "预警提醒", "WARNING"}, {"MESSAGE", "消息提醒", "MESSAGE"}});
+    }
+
+    private void initMedicalDictionaries() {
+        // 阳性症状
+        saveDictionary("SYMPTOM_POSITIVE", "阳性症状",
+                new Object[][]{
+                        {"FEVER", "发热", "发热"},
+                        {"HEADACHE", "头痛", "头痛"},
+                        {"CHEST_PAIN", "胸痛", "胸痛"},
+                        {"DYSPNEA", "呼吸困难", "呼吸困难"},
+                        {"COUGH", "咳嗽", "咳嗽"},
+                        {"HEMATEMESIS", "呕血", "呕血"},
+                        {"HEMATOCHEZIA", "便血", "便血"},
+                        {"ABDOMINAL_PAIN", "腹痛", "腹痛"},
+                        {"NAUSEA", "恶心", "恶心"},
+                        {"VOMITING", "呕吐", "呕吐"},
+                        {"DIARRHEA", "腹泻", "腹泻"},
+                        {"CONSTIPATION", "便秘", "便秘"},
+                        {"EDEMA", "水肿", "水肿"},
+                        {"PALPITATION", "心悸", "心悸"},
+                        {"DIZZINESS", "头晕", "头晕"},
+                        {"FATIGUE", "乏力", "乏力"},
+                        {"WEIGHT_LOSS", "消瘦", "消瘦"},
+                        {"CHILLS", "寒战", "寒战"},
+                        {"SWEATING", "出汗", "出汗"},
+                        {"FEVER_NIGHT", "夜间发热", "夜间发热"}
+                });
+
+        // 阴性症状
+        saveDictionary("SYMPTOM_NEGATIVE", "阴性症状",
+                new Object[][]{
+                        {"NO_FEVER", "无发热", "无发热"},
+                        {"NO_HEADACHE", "无头痛", "无头痛"},
+                        {"NO_CHEST_PAIN", "无胸痛", "无胸痛"},
+                        {"NO_DYSPNEA", "无呼吸困难", "无呼吸困难"},
+                        {"NO_COUGH", "无咳嗽", "无咳嗽"},
+                        {"NO_ABDOMINAL_PAIN", "无腹痛", "无腹痛"},
+                        {"NO_NAUSEA", "无恶心", "无恶心"},
+                        {"NO_VOMITING", "无呕吐", "无呕吐"}
+                });
+
+        // 阳性体征
+        saveDictionary("SIGN_POSITIVE", "阳性体征",
+                new Object[][]{
+                        {"TENDERNESS", "压痛", "压痛"},
+                        {"REBOUND_TENDERNESS", "反跳痛", "反跳痛"},
+                        {"MURPHY_SIGN", "墨菲氏征阳性", "墨菲氏征阳性"},
+                        {"MCBURNEY_TENDERNESS", "麦氏点压痛", "麦氏点压痛"},
+                        {"HEPATOMEGALY", "肝大", "肝大"},
+                        {"SPLENOMEGALY", "脾大", "脾大"},
+                        {"LYMPHADENOPATHY", "淋巴结肿大", "淋巴结肿大"},
+                        {"EDEMA_LOWER", "双下肢水肿", "双下肢水肿"},
+                        {"RALES", "湿啰音", "湿啰音"},
+                        {"WHEEZING", "哮鸣音", "哮鸣音"},
+                        {"JAUNDICE", "黄疸", "黄疸"},
+                        {"HEART_MURMUR", "心脏杂音", "心脏杂音"}
+                });
+
+        // 阴性体征
+        saveDictionary("SIGN_NEGATIVE", "阴性体征",
+                new Object[][]{
+                        {"NO_TENDERNESS", "无压痛", "无压痛"},
+                        {"NO_REBOUND", "无反跳痛", "无反跳痛"},
+                        {"NO_EDEMA", "无水肿", "无水肿"},
+                        {"NO_LYMPHADENOPATHY", "无淋巴结肿大", "无淋巴结肿大"},
+                        {"NO_WHEEZING", "无哮鸣音", "无哮鸣音"}
+                });
+
+        // 否定词
+        saveDictionary("NEGATION_WORDS", "否定词",
+                new Object[][]{
+                        {"NO", "无", "无"},
+                        {"DENY", "否认", "否认"},
+                        {"NOT_FOUND", "未发现", "未发现"},
+                        {"NOT_VISIBLE", "未见", "未见"},
+                        {"NOT_HAVE", "没有", "没有"},
+                        {"NOT_CLEAR", "不清", "不清"},
+                        {"NOT_EXACT", "不明确", "不明确"},
+                        {"EXCLUDE", "排除", "排除"},
+                        {"NOT_SEE", "未查见", "未查见"},
+                        {"WITHOUT", "不伴", "不伴"},
+                        {"NEGATIVE", "阴性", "阴性"}
+                });
+
+        // 手术
+        saveDictionary("SURGERY", "手术",
+                new Object[][]{
+                        {"APPENDECTOMY", "阑尾切除术", "阑尾切除术"},
+                        {"CHOLECYSTECTOMY", "胆囊切除术", "胆囊切除术"},
+                        {"THYROIDECTOMY", "甲状腺切除术", "甲状腺切除术"},
+                        {"MASTECTOMY", "乳房切除术", "乳房切除术"},
+                        {"HYSTERECTOMY", "子宫切除术", "子宫切除术"},
+                        {"CABG", "冠状动脉搭桥术", "冠状动脉搭桥术"},
+                        {"PCI", "经皮冠状动脉介入治疗", "经皮冠状动脉介入治疗"},
+                        {"APPENDECTOMY_LAP", "腹腔镜阑尾切除术", "腹腔镜阑尾切除术"},
+                        {"CHOLECYSTECTOMY_LAP", "腹腔镜胆囊切除术", "腹腔镜胆囊切除术"},
+                        {"COLECTOMY", "结肠切除术", "结肠切除术"}
+                });
+
+        // 检查
+        saveDictionary("EXAM", "检查",
+                new Object[][]{
+                        {"CT", "CT", "CT"},
+                        {"MRI", "核磁共振", "核磁共振"},
+                        {"X_RAY", "X线", "X线"},
+                        {"ULTRASOUND", "超声", "超声"},
+                        {"ECG", "心电图", "心电图"},
+                        {"EEG", "脑电图", "脑电图"},
+                        {"GASTROSCOPY", "胃镜", "胃镜"},
+                        {"COLONOSCOPY", "肠镜", "肠镜"},
+                        {"BRONCHOSCOPY", "支气管镜", "支气管镜"},
+                        {"BLOOD_TEST", "血常规", "血常规"},
+                        {"URINE_TEST", "尿常规", "尿常规"},
+                        {"BIOCHEMISTRY", "生化全套", "生化全套"},
+                        {"TUMOR_MARKER", "肿瘤标志物", "肿瘤标志物"},
+                        {"BMP", "B超", "B超"},
+                        {"COLOR_DOPPLER", "彩超", "彩超"}
+                });
+
+        // 药品（扩展，覆盖常见质控场景）
+        saveDictionary("DRUG", "药品",
+                new Object[][]{
+                        {"PENICILLIN", "青霉素", "PENICILLIN"},
+                        {"CEFTRIAXONE", "头孢曲松", "CEFTRIAXONE"},
+                        {"METFORMIN", "二甲双胍", "METFORMIN"},
+                        {"ASPIRIN", "阿司匹林", "阿司匹林"},
+                        {"CLOPIDOGREL", "氯吡格雷", "氯吡格雷"},
+                        {"ATORVASTATIN", "阿托伐他汀", "阿托伐他汀"},
+                        {"AMLODIPINE", "氨氯地平", "氨氯地平"},
+                        {"CAPTOPRIL", "卡托普利", "卡托普利"},
+                        {"FUROSEMIDE", "呋塞米", "呋塞米"},
+                        {"DIGOXIN", "地高辛", "地高辛"},
+                        {"INSULIN", "胰岛素", "胰岛素"},
+                        {"GLIPIZIDE", "格列吡嗪", "格列吡嗪"},
+                        {"OMEPRAZOLE", "奥美拉唑", "奥美拉唑"},
+                        {"PANTOPRAZOLE", "泮托拉唑", "泮托拉唑"},
+                        {"MORPHINE", "吗啡", "吗啡"},
+                        {"TRAMADOL", "曲马多", "曲马多"},
+                        {"PARACETAMOL", "对乙酰氨基酚", "对乙酰氨基酚"},
+                        {"CEFAZOLIN", "头孢唑林", "头孢唑林"},
+                        {"VANCOMYCIN", "万古霉素", "万古霉素"},
+                        {"MEROPENEM", "美罗培南", "美罗培南"}
+                });
     }
 
     private void initIcd10Dictionary() {
@@ -197,6 +389,15 @@ public class DataInitializer implements CommandLineRunner {
         saveDataElement("EMR_CONTENT", "病历文书内容", DataType.STRING, null, null, datasetId);
         saveDataElement("VITAL_BP", "血压", DataType.NUMERIC, null, "单位：mmHg", datasetId);
         saveDataElement("VITAL_TEMP", "体温", DataType.NUMERIC, null, "单位：℃", datasetId);
+        // NLP 衍生数据元
+        saveDataElement("POSITIVE_SYMPTOMS", "阳性症状", DataType.STRING_LIST, null, "NLP提取的阳性症状列表", datasetId);
+        saveDataElement("NEGATIVE_SYMPTOMS", "阴性症状", DataType.STRING_LIST, null, "NLP提取的阴性症状列表", datasetId);
+        saveDataElement("POSITIVE_SIGNS", "阳性体征", DataType.STRING_LIST, null, "NLP提取的阳性体征列表", datasetId);
+        saveDataElement("NEGATIVE_SIGNS", "阴性体征", DataType.STRING_LIST, null, "NLP提取的阴性体征列表", datasetId);
+        saveDataElement("POSITIVE_DRUGS", "阳性药品", DataType.STRING_LIST, null, "NLP提取的阳性药品列表", datasetId);
+        saveDataElement("POSITIVE_EXAMS", "阳性检查", DataType.STRING_LIST, null, "NLP提取的阳性检查列表", datasetId);
+        saveDataElement("POSITIVE_SURGERIES", "阳性手术", DataType.STRING_LIST, null, "NLP提取的阳性手术列表", datasetId);
+        saveDataElement("POSITIVE_DISEASES", "阳性疾病", DataType.STRING_LIST, null, "NLP提取的阳性疾病列表", datasetId);
     }
 
     private void saveDataElement(String code, String name, DataType dataType, String dictCode, String description, Long datasetId) {
@@ -282,15 +483,24 @@ public class DataInitializer implements CommandLineRunner {
         DataElement emr = findDe("EMR_CONTENT");
         DataElement bp = findDe("VITAL_BP");
         DataElement temp = findDe("VITAL_TEMP");
+        DataElement posSymptoms = findDe("POSITIVE_SYMPTOMS");
+        DataElement negSymptoms = findDe("NEGATIVE_SYMPTOMS");
+        DataElement posSigns = findDe("POSITIVE_SIGNS");
+        DataElement negSigns = findDe("NEGATIVE_SIGNS");
 
-        saveConditionModel(age.getId(), patientCat.getId(), Arrays.asList("==", "!=", ">", "<"), ValueSource.PARAM, NodeUsage.CONDITION);
-        saveConditionModel(gender.getId(), patientCat.getId(), Collections.singletonList("=="), ValueSource.PARAM, NodeUsage.CONDITION);
-        saveConditionModel(diagnosis.getId(), diagnosisCat.getId(), Collections.singletonList("IN_SET"), ValueSource.PARAM, NodeUsage.CONDITION);
-        saveConditionModel(drug.getId(), ordersCat.getId(), Collections.singletonList("IN_SET"), ValueSource.PARAM, NodeUsage.CONDITION);
+        if (age != null) saveConditionModel(age.getId(), patientCat.getId(), Arrays.asList("==", "!=", ">", "<"), ValueSource.PARAM, NodeUsage.CONDITION);
+        if (gender != null) saveConditionModel(gender.getId(), patientCat.getId(), Collections.singletonList("=="), ValueSource.PARAM, NodeUsage.CONDITION);
+        if (diagnosis != null) saveConditionModel(diagnosis.getId(), diagnosisCat.getId(), Collections.singletonList("IN_SET"), ValueSource.PARAM, NodeUsage.CONDITION);
+        if (drug != null) saveConditionModel(drug.getId(), ordersCat.getId(), Collections.singletonList("IN_SET"), ValueSource.PARAM, NodeUsage.CONDITION);
         saveConditionModel(null, null, Collections.singletonList("=="), ValueSource.PARAM, NodeUsage.RESULT);
-        saveConditionModel(emr.getId(), emrCat.getId(), Arrays.asList("==", "contains", "regex_match", "regexMatch", "existenceConflict", "whitelistMatch", "dictMatch"), ValueSource.ADAPTER, NodeUsage.CONDITION);
-        saveConditionModel(bp.getId(), vitalCat.getId(), Arrays.asList("==", "!=", ">", "<"), ValueSource.PARAM, NodeUsage.BOTH);
-        saveConditionModel(temp.getId(), vitalCat.getId(), Arrays.asList("==", "!=", ">", "<"), ValueSource.PARAM, NodeUsage.BOTH);
+        if (emr != null) saveConditionModel(emr.getId(), emrCat.getId(), Arrays.asList("==", "contains", "regex_match", "regexMatch", "existenceConflict", "whitelistMatch", "dictMatch", "medicalNer", "negationCheck", "tokenSimilarity", "allNegated"), ValueSource.ADAPTER, NodeUsage.CONDITION);
+        if (bp != null) saveConditionModel(bp.getId(), vitalCat.getId(), Arrays.asList("==", "!=", ">", "<"), ValueSource.PARAM, NodeUsage.BOTH);
+        if (temp != null) saveConditionModel(temp.getId(), vitalCat.getId(), Arrays.asList("==", "!=", ">", "<"), ValueSource.PARAM, NodeUsage.BOTH);
+        // NLP 衍生数据元的条件模型
+        if (posSymptoms != null) saveConditionModel(posSymptoms.getId(), emrCat.getId(), Arrays.asList("contains", "arrayLength", "arrayIntersect"), ValueSource.ADAPTER, NodeUsage.CONDITION);
+        if (negSymptoms != null) saveConditionModel(negSymptoms.getId(), emrCat.getId(), Arrays.asList("contains", "arrayLength", "arrayIntersect"), ValueSource.ADAPTER, NodeUsage.CONDITION);
+        if (posSigns != null) saveConditionModel(posSigns.getId(), emrCat.getId(), Arrays.asList("contains", "arrayLength", "arrayIntersect"), ValueSource.ADAPTER, NodeUsage.CONDITION);
+        if (negSigns != null) saveConditionModel(negSigns.getId(), emrCat.getId(), Arrays.asList("contains", "arrayLength", "arrayIntersect"), ValueSource.ADAPTER, NodeUsage.CONDITION);
         saveConditionModel(null, null, Collections.singletonList("=="), ValueSource.PARAM, NodeUsage.RESULT);
     }
 
@@ -314,6 +524,11 @@ public class DataInitializer implements CommandLineRunner {
                 cm.setCategoryId(ordersCat != null ? ordersCat.getId() : null);
             } else if (code.equals("EMR_CONTENT")) {
                 cm.setCategoryId(emrCat != null ? emrCat.getId() : null);
+            } else if (code.equals("POSITIVE_SYMPTOMS") || code.equals("NEGATIVE_SYMPTOMS") ||
+                       code.equals("POSITIVE_SIGNS") || code.equals("NEGATIVE_SIGNS") ||
+                       code.equals("POSITIVE_DRUGS") || code.equals("POSITIVE_EXAMS") ||
+                       code.equals("POSITIVE_SURGERIES") || code.equals("POSITIVE_DISEASES")) {
+                cm.setCategoryId(emrCat != null ? emrCat.getId() : null);
             } else if (code.equals("VITAL_BP") || code.equals("VITAL_TEMP")) {
                 cm.setCategoryId(vitalCat != null ? vitalCat.getId() : null);
             }
@@ -323,8 +538,7 @@ public class DataInitializer implements CommandLineRunner {
     }
 
     private DataElement findDe(String code) {
-        return dataElementRepository.findByCode(code)
-                .orElseThrow(() -> new RuntimeException("数据元不存在: " + code));
+        return dataElementRepository.findByCode(code).orElse(null);
     }
 
     private void saveConditionModel(Long dataElementId, Long categoryId, java.util.List<String> operators,
@@ -339,7 +553,10 @@ public class DataInitializer implements CommandLineRunner {
         if (dataElementId != null) {
             DataElement de = dataElementRepository.findById(dataElementId)
                     .orElseThrow(() -> new RuntimeException("数据元不存在: " + dataElementId));
-            model.setCode(de.getCode());
+            // 优先使用驼峰名作为运行时字段名，兼容导入的数据元
+            String fieldCode = (de.getCamelName() != null && !de.getCamelName().isEmpty())
+                    ? de.getCamelName() : de.getCode();
+            model.setCode(fieldCode);
             model.setName(de.getName());
             model.setDataType(de.getDataType());
         } else {

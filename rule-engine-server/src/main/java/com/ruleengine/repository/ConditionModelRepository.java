@@ -10,4 +10,5 @@ import java.util.List;
 public interface ConditionModelRepository extends JpaRepository<ConditionModel, Long> {
     List<ConditionModel> findByCategoryId(Long categoryId);
     long countByCategoryId(Long categoryId);
+    boolean existsByDataElementIdAndCode(Long dataElementId, String code);
 }

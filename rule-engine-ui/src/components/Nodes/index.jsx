@@ -2,10 +2,14 @@ import React from 'react'
 import { Handle, Position } from 'reactflow'
 import './node-styles.css'
 
+function highlightClass(highlighted) {
+  return highlighted ? ' node-highlighted' : ''
+}
+
 // 开始节点
 function StartNode({ data }) {
   return (
-    <div className="node start-node">
+    <div className={`node start-node${highlightClass(data.highlighted)}`}>
       <div className="node-content">{data.label}</div>
       <Handle type="source" position={Position.Right} />
     </div>
@@ -15,7 +19,7 @@ function StartNode({ data }) {
 // 条件节点
 function ConditionNode({ data }) {
   return (
-    <div className="node condition-node">
+    <div className={`node condition-node${highlightClass(data.highlighted)}`}>
       <Handle type="target" position={Position.Left} />
       <div className="node-header">条件</div>
       <div className="node-content">
@@ -35,7 +39,7 @@ function ConditionNode({ data }) {
 // 结果节点
 function ResultNode({ data }) {
   return (
-    <div className="node result-node">
+    <div className={`node result-node${highlightClass(data.highlighted)}`}>
       <Handle type="target" position={Position.Left} />
       <div className="node-header">结果</div>
       <div className="node-content">
@@ -54,7 +58,7 @@ function ResultNode({ data }) {
 // AND 节点
 function AndNode({ data }) {
   return (
-    <div className="node logic-node">
+    <div className={`node logic-node${highlightClass(data.highlighted)}`}>
       <Handle type="target" position={Position.Left} />
       <div className="node-content">AND</div>
       <Handle type="source" position={Position.Right} />
@@ -65,7 +69,7 @@ function AndNode({ data }) {
 // OR 节点
 function OrNode({ data }) {
   return (
-    <div className="node logic-node">
+    <div className={`node logic-node${highlightClass(data.highlighted)}`}>
       <Handle type="target" position={Position.Left} />
       <div className="node-content">OR</div>
       <Handle type="source" position={Position.Right} />
@@ -76,7 +80,7 @@ function OrNode({ data }) {
 // 结束节点
 function EndNode({ data }) {
   return (
-    <div className="node end-node">
+    <div className={`node end-node${highlightClass(data.highlighted)}`}>
       <Handle type="target" position={Position.Left} />
       <div className="node-content">{data.label}</div>
     </div>

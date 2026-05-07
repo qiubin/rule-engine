@@ -29,3 +29,10 @@ start.log
 *.jar
 *.war
 *.bak
+
+# Data & Uploads
+uploads/
+rule-engine-server/data/
+
+# Claude
+.claude/

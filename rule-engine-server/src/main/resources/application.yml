@@ -29,6 +29,15 @@ management:
       exposure:
         include: health,info,metrics
 
+his:
+  enabled: false
+  base-url: ""
+  auth-type: bearer
+  auth-token: ""
+  api-key: ""
+  connect-timeout-ms: 5000
+  read-timeout-ms: 10000
+
 logging:
   level:
     com.ruleengine: DEBUG

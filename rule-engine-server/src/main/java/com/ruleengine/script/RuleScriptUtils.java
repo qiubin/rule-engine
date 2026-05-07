@@ -13,6 +13,9 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.regex.Matcher;
+import java.lang.reflect.Array;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.regex.Pattern;
 
 /**
@@ -316,6 +319,148 @@ public class RuleScriptUtils {
             log.error("时间判断解析错误, targetTime: {}, baseTime: {}", targetTime, baseTime, e);
             return false; // 解析错误返回 false
         }
+    }
+
+    /**
+     * 6. 字段长度校验：判断输入字符串的长度，命中时返回TRUE。
+     * 应用场景：字段非空校验（长度=0）、字段过短/过长校验。
+     */
+    public static boolean lengthCheck(String input, String op, int threshold) {
+        if (input == null) input = "";
+        int len = input.length();
+        switch (op.trim()) {
+            case ">": return len > threshold;
+            case "<": return len < threshold;
+            case ">=": return len >= threshold;
+            case "<=": return len <= threshold;
+            case "==": case "=": return len == threshold;
+            case "!=": return len != threshold;
+            default: log.warn("不支持的lengthCheck操作符: {}", op); return false;
+        }
+    }
+
+    /**
+     * 7. 空值校验：判断输入值是否为 null 或空白字符串，命中时返回TRUE。
+     * 应用场景：字段缺失、必填项未填写。
+     */
+    public static boolean isBlank(Object v) {
+        if (v == null) return true;
+        String s = String.valueOf(v);
+        return !StringUtils.hasText(s);
+    }
+
+    /**
+     * 8. 文本相似度：基于 HanLP 分词的 Jaccard 系数判断两段文本相似度是否超过阈值，命中时返回TRUE。
+     * 优先使用 HanLP 分词，若不可用则自动回退到字符二元组。
+     * 应用场景：病程记录雷同判断（R56/R65/R73/R74/R75）。
+     */
+    public static boolean similarity(String a, String b, double threshold) {
+        if (!StringUtils.hasText(a) || !StringUtils.hasText(b)) {
+            return true; // 任一为空视为异常，触发质控
+        }
+        double sim;
+        try {
+            sim = tokenJaccard(a, b);
+        } catch (Exception e) {
+            sim = bigramJaccard(a, b);
+        }
+        log.debug("similarity: a_len={}, b_len={}, sim={}", a.length(), b.length(), sim);
+        return sim >= threshold;
+    }
+
+    private static double tokenJaccard(String a, String b) {
+        List<com.hankcs.hanlp.seg.common.Term> termsA = com.hankcs.hanlp.HanLP.segment(a);
+        List<com.hankcs.hanlp.seg.common.Term> termsB = com.hankcs.hanlp.HanLP.segment(b);
+        Set<String> sa = termsA.stream().map(t -> t.word).collect(Collectors.toSet());
+        Set<String> sb = termsB.stream().map(t -> t.word).collect(Collectors.toSet());
+        if (sa.isEmpty() && sb.isEmpty()) {
+            return 1.0;
+        }
+        Set<String> intersection = new HashSet<>(sa);
+        intersection.retainAll(sb);
+        Set<String> union = new HashSet<>(sa);
+        union.addAll(sb);
+        return union.isEmpty() ? 0.0 : (double) intersection.size() / union.size();
+    }
+
+    private static double bigramJaccard(String a, String b) {
+        Set<String> sa = toBigrams(a);
+        Set<String> sb = toBigrams(b);
+        if (sa.isEmpty() && sb.isEmpty()) {
+            return 1.0;
+        }
+        Set<String> intersection = new HashSet<>(sa);
+        intersection.retainAll(sb);
+        Set<String> union = new HashSet<>(sa);
+        union.addAll(sb);
+        return union.isEmpty() ? 0.0 : (double) intersection.size() / union.size();
+    }
+
+    private static Set<String> toBigrams(String s) {
+        Set<String> set = new HashSet<>();
+        for (int i = 0; i < s.length() - 1; i++) {
+            set.add(s.substring(i, i + 2));
+        }
+        return set;
+    }
+
+    /**
+     * 9. 集合长度校验：判断集合（或数组）的元素个数，命中时返回TRUE。
+     * 应用场景：阴性症状个数校验（R17/R29：个数<5 触发质控）。
+     */
+    public static boolean arrayLength(Object collection, String op, int threshold) {
+        if (collection == null) collection = Collections.emptyList();
+        int size;
+        if (collection instanceof Collection) {
+            size = ((Collection<?>) collection).size();
+        } else if (collection.getClass().isArray()) {
+            size = Array.getLength(collection);
+        } else {
+            log.warn("arrayLength 不支持的类型: {}", collection.getClass());
+            return false;
+        }
+        switch (op.trim()) {
+            case ">": return size > threshold;
+            case "<": return size < threshold;
+            case ">=": return size >= threshold;
+            case "<=": return size <= threshold;
+            case "==": case "=": return size == threshold;
+            case "!=": return size != threshold;
+            default: log.warn("不支持的arrayLength操作符: {}", op); return false;
+        }
+    }
+
+    /**
+     * 10. 集合交集校验：判断两个集合的交集元素个数，命中时返回TRUE。
+     * 应用场景：门诊主诉与入院主诉症状交集对比（R9/R20：交集为空触发质控）。
+     */
+    public static boolean arrayIntersect(Object collA, Object collB, String op, int threshold) {
+        Collection<?> a = toCollection(collA);
+        Collection<?> b = toCollection(collB);
+        if (a == null) a = Collections.emptyList();
+        if (b == null) b = Collections.emptyList();
+
+        Set<Object> intersection = new HashSet<>(a);
+        intersection.retainAll(b);
+        int count = intersection.size();
+
+        switch (op.trim()) {
+            case ">": return count > threshold;
+            case "<": return count < threshold;
+            case ">=": return count >= threshold;
+            case "<=": return count <= threshold;
+            case "==": case "=": return count == threshold;
+            case "!=": return count != threshold;
+            default: log.warn("不支持的arrayIntersect操作符: {}", op); return false;
+        }
+    }
+
+    private static Collection<?> toCollection(Object o) {
+        if (o == null) return null;
+        if (o instanceof Collection) return (Collection<?>) o;
+        if (o.getClass().isArray()) return Arrays.asList((Object[]) o);
+        log.warn("无法转为集合: {}", o.getClass());
+        return null;
     }
 
 }

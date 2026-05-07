@@ -35,6 +35,25 @@ public class DataElement {
     @Column(name = "dict_code", length = 64)
     private String dictCode;
 
+    @Column(name = "standard_code", length = 64)
+    private String standardCode;
+
+    @Column(name = "english_name", length = 128)
+    private String englishName;
+
+    @Column(name = "camel_name", length = 128)
+    private String camelName;
+
+    @Lob
+    @Column(name = "definition", columnDefinition = "TEXT")
+    private String definition;
+
+    @Column(name = "sort_order")
+    private Integer sortOrder;
+
+    @Column(name = "sensitivity", length = 16)
+    private String sensitivity;
+
     @Column(name = "description", length = 512)
     private String description;
 

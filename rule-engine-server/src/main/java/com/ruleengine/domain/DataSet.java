@@ -27,6 +27,30 @@ public class DataSet {
     @Column(name = "name", nullable = false, length = 128)
     private String name;
 
+    @Column(name = "english_name", length = 128)
+    private String englishName;
+
+    @Column(name = "cat_l1_code", length = 32)
+    private String catL1Code;
+
+    @Column(name = "cat_l1_name", length = 128)
+    private String catL1Name;
+
+    @Column(name = "cat_l2_code", length = 32)
+    private String catL2Code;
+
+    @Column(name = "cat_l2_name", length = 128)
+    private String catL2Name;
+
+    @Column(name = "cat_l3_code", length = 32)
+    private String catL3Code;
+
+    @Column(name = "cat_l3_name", length = 128)
+    private String catL3Name;
+
+    @Column(name = "sort_order")
+    private Integer sortOrder;
+
     @Column(name = "description", length = 512)
     private String description;
 

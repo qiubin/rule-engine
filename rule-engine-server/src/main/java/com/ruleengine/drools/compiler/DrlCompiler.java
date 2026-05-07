@@ -79,19 +79,19 @@ public class DrlCompiler {
         Set<String> generatedRules = new HashSet<>();
         
         generateRuleRecursive(ruleCode, startNodeId, nodeMap, adjacency, gateConditions,
-                rulesBuilder, generatedRules, "", 0);
+                rulesBuilder, generatedRules, "", new ArrayList<>(), 0);
 
         String drl = String.format(DRL_TEMPLATE, sanitizePackage(ruleCode), rulesBuilder.toString());
         log.debug("生成的 DRL:\n{}", drl);
         return drl;
     }
 
-    private void generateRuleRecursive(String ruleCode, String nodeId, 
-                                       Map<String, JsonNode> nodeMap, 
+    private void generateRuleRecursive(String ruleCode, String nodeId,
+                                       Map<String, JsonNode> nodeMap,
                                        Map<String, List<JsonNode>> adjacency,
                                        Map<String, String> gateConditions,
                                        StringBuilder rulesBuilder, Set<String> generatedRules,
-                                       String parentCondition, int depth) {
+                                       String parentCondition, List<String> parentConditionIds, int depth) {
         if (depth > 50) {
             return;
         }
@@ -118,41 +118,44 @@ public class DrlCompiler {
             List<JsonNode> outEdges = adjacency.getOrDefault(nodeId, Collections.emptyList());
             for (JsonNode edge : outEdges) {
                 generateRuleRecursive(ruleCode, edge.get("target").asText(), nodeMap, adjacency, gateConditions,
-                        rulesBuilder, generatedRules, parentCondition, depth + 1);
+                        rulesBuilder, generatedRules, parentCondition, parentConditionIds, depth + 1);
             }
         } else if ("condition".equals(type)) {
             String conditionExpr = buildConditionExpression(node);
-            String fullCondition = parentCondition.isEmpty() ? conditionExpr 
+            String fullCondition = parentCondition.isEmpty() ? conditionExpr
                     : parentCondition + " && " + conditionExpr;
-            
+
+            List<String> branchIds = new ArrayList<>(parentConditionIds);
+            branchIds.add(nodeId);
+
             List<JsonNode> outEdges = adjacency.getOrDefault(nodeId, Collections.emptyList());
             for (JsonNode edge : outEdges) {
                 String label = edge.has("label") ? edge.get("label").asText() : "";
                 String sourceHandle = edge.has("sourceHandle") ? edge.get("sourceHandle").asText() : "";
                 boolean isTrueBranch = "true".equals(sourceHandle) || "是".equals(label) || "true".equalsIgnoreCase(label) || label.isEmpty();
-                
+
                 String branchCondition = isTrueBranch ? fullCondition : negateCondition(fullCondition);
                 String targetId = edge.get("target").asText();
-                
+
                 JsonNode targetNode = nodeMap.get(targetId);
                 if (targetNode != null && "result".equals(targetNode.get("type").asText())) {
-                    generateResultRule(ruleCode, nodeLabel, branchCondition, targetNode, rulesBuilder);
+                    generateResultRule(ruleCode, nodeLabel, branchCondition, targetNode, branchIds, rulesBuilder);
                 } else {
                     generateRuleRecursive(ruleCode, targetId, nodeMap, adjacency, gateConditions,
-                            rulesBuilder, generatedRules, branchCondition, depth + 1);
+                            rulesBuilder, generatedRules, branchCondition, branchIds, depth + 1);
                 }
             }
         } else if ("result".equals(type)) {
-            generateResultRule(ruleCode, nodeLabel, parentCondition, node, rulesBuilder);
+            generateResultRule(ruleCode, nodeLabel, parentCondition, node, parentConditionIds, rulesBuilder);
         } else if ("and".equals(type) || "or".equals(type)) {
             // 使用预计算的上游条件组合，替代 parentCondition
             String gateCondition = gateConditions.getOrDefault(nodeId, "");
             String finalCondition = gateCondition.isEmpty() ? parentCondition : gateCondition;
-            
+
             List<JsonNode> outEdges = adjacency.getOrDefault(nodeId, Collections.emptyList());
             for (JsonNode edge : outEdges) {
                 generateRuleRecursive(ruleCode, edge.get("target").asText(), nodeMap, adjacency, gateConditions,
-                        rulesBuilder, generatedRules, finalCondition, depth + 1);
+                        rulesBuilder, generatedRules, finalCondition, parentConditionIds, depth + 1);
             }
         }
     }
@@ -282,6 +285,25 @@ public class DrlCompiler {
             String minHours = (!extraValue1.trim().isEmpty() && !extraValue1.equalsIgnoreCase("null")) ? extraValue1 : "null";
             String maxHours = (!extraValue2.trim().isEmpty() && !extraValue2.equalsIgnoreCase("null")) ? extraValue2 : "null";
             return String.format("RuleScriptUtils.timeCheck((String)$param.get(\"%s\"), (String)$param.get(\"%s\"), %s, %s)", field, baseTimeField, minHours, maxHours);
+        } else if ("lengthCheck".equals(operator)) {
+            String op = valueStr;
+            String threshold = extraValue1;
+            return String.format("RuleScriptUtils.lengthCheck((String)$param.get(\"%s\"), \"%s\", Integer.parseInt(\"%s\"))", field, op, threshold);
+        } else if ("isBlank".equals(operator)) {
+            return String.format("RuleScriptUtils.isBlank($param.get(\"%s\"))", field);
+        } else if ("similarity".equals(operator)) {
+            String otherField = valueStr;
+            String threshold = extraValue1;
+            return String.format("RuleScriptUtils.similarity((String)$param.get(\"%s\"), (String)$param.get(\"%s\"), Double.parseDouble(\"%s\"))", field, otherField, threshold);
+        } else if ("arrayLength".equals(operator)) {
+            String op = valueStr;
+            String threshold = extraValue1;
+            return String.format("RuleScriptUtils.arrayLength($param.get(\"%s\"), \"%s\", Integer.parseInt(\"%s\"))", field, op, threshold);
+        } else if ("arrayIntersect".equals(operator)) {
+            String otherField = valueStr;
+            String op = extraValue1;
+            String threshold = extraValue2;
+            return String.format("RuleScriptUtils.arrayIntersect($param.get(\"%s\"), $param.get(\"%s\"), \"%s\", Integer.parseInt(\"%s\"))", field, otherField, op, threshold);
         }
         return "true";
     }
@@ -290,15 +312,24 @@ public class DrlCompiler {
         return "!(" + condition + ")";
     }
 
-    private void generateResultRule(String ruleCode, String nodeLabel, String condition, 
-                                     JsonNode resultNode, StringBuilder rulesBuilder) {
+    private void generateResultRule(String ruleCode, String nodeLabel, String condition,
+                                     JsonNode resultNode, List<String> hitConditionIds, StringBuilder rulesBuilder) {
         JsonNode data = resultNode.get("data");
         JsonNode resultConfig = data != null && data.has("resultConfig") ? data.get("resultConfig") : null;
         String resultType = resultConfig != null && resultConfig.has("resultType") ? resultConfig.get("resultType").asText() : "DEFAULT";
         String resultValue = resultConfig != null && resultConfig.has("resultValue") ? resultConfig.get("resultValue").asText() : nodeLabel;
-        
-        String ruleName = sanitizeRuleName(ruleCode + "_" + nodeLabel + "_" + System.currentTimeMillis());
-        
+        String resultNodeId = resultNode.get("id").asText();
+
+        StringBuilder idsBuilder = new StringBuilder();
+        idsBuilder.append("java.util.Arrays.asList(");
+        for (int i = 0; i < hitConditionIds.size(); i++) {
+            if (i > 0) idsBuilder.append(", ");
+            idsBuilder.append("\"").append(hitConditionIds.get(i)).append("\"");
+        }
+        idsBuilder.append(")");
+
+        String ruleName = sanitizeRuleName(ruleCode + "_" + nodeLabel + "_" + resultNodeId);
+
         rulesBuilder.append("rule \"").append(ruleName).append("\"\n")
                 .append("when\n")
                 .append("    $param : Map(").append(condition).append(")\n")
@@ -309,6 +340,8 @@ public class DrlCompiler {
                 .append("    r.put(\"resultType\", \"").append(resultType).append("\");\n")
                 .append("    r.put(\"resultValue\", \"").append(resultValue).append("\");\n")
                 .append("    r.put(\"matched\", true);\n")
+                .append("    r.put(\"resultNodeId\", \"").append(resultNodeId).append("\");\n")
+                .append("    r.put(\"hitConditionIds\", ").append(idsBuilder.toString()).append(");\n")
                 .append("    result.put(\"result_\" + System.currentTimeMillis(), r);\n")
                 .append("end\n")
                 .append("\n");

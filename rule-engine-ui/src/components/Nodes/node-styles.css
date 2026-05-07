@@ -83,3 +83,15 @@
   color: #ff4d4f;
   font-weight: bold;
 }
+
+.node-highlighted {
+  box-shadow: 0 0 0 3px #52c41a !important;
+  border-color: #52c41a !important;
+  animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+  0% { box-shadow: 0 0 0 3px rgba(82, 196, 26, 0.6); }
+  50% { box-shadow: 0 0 0 6px rgba(82, 196, 26, 0.3); }
+  100% { box-shadow: 0 0 0 3px rgba(82, 196, 26, 0.6); }
+}

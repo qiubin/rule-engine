@@ -10,6 +10,7 @@ import java.util.Optional;
 @Repository
 public interface DataElementRepository extends JpaRepository<DataElement, Long> {
     Optional<DataElement> findByCode(String code);
+    Optional<DataElement> findByCamelNameAndDatasetId(String camelName, Long datasetId);
     List<DataElement> findByDictCode(String dictCode);
     List<DataElement> findByDatasetId(Long datasetId);
     long countByDatasetId(Long datasetId);

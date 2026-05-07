@@ -2,11 +2,14 @@ package com.ruleengine.controller;
 
 import com.ruleengine.domain.ConditionModel;
 import com.ruleengine.service.ConditionModelService;
+import com.ruleengine.service.ConditionSyncService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/v1/condition-models")
@@ -15,6 +18,16 @@ import java.util.List;
 public class ConditionModelController {
 
     private final ConditionModelService conditionModelService;
+    private final ConditionSyncService conditionSyncService;
+
+    @PostMapping("/sync")
+    public ResponseEntity<Map<String, Object>> sync() {
+        ConditionSyncService.SyncResult result = conditionSyncService.sync();
+        Map<String, Object> map = new HashMap<>();
+        map.put("categoryCount", result.getCategoryCount());
+        map.put("conditionCount", result.getConditionCount());
+        return ResponseEntity.ok(map);
+    }
 
     @GetMapping
     public ResponseEntity<List<ConditionModel>> list() {

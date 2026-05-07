@@ -1,0 +1,351 @@
+openapi: 3.0.3
+info:
+  title: HIS API for Rule Engine
+  description: 医院信息系统与病历质控规则引擎对接接口
+  version: 1.0.0
+  contact:
+    name: 规则引擎团队
+
+servers:
+  - url: http://his.hospital.com/api
+    description: HIS 测试环境
+  - url: https://his.hospital.com/api
+    description: HIS 生产环境
+
+paths:
+  /v1/patient/{patientId}/current-admission:
+    get:
+      summary: 获取当前住院信息
+      operationId: getCurrentAdmission
+      tags:
+        - 患者信息
+      parameters:
+        - name: patientId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: 患者唯一标识
+        - name: Authorization
+          in: header
+          required: false
+          schema:
+            type: string
+          description: Bearer Token
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+              example:
+                code: 200
+                message: success
+                data:
+                  admissionId: "A20240501001"
+                  patientId: "P12345"
+                  patientName: "张三"
+                  department: "心内科"
+                  admissionTime: "2024-05-01 09:00:00"
+                  age: 64
+                  sexCode: "M"
+        '404':
+          description: 患者不存在或当前无住院记录
+
+  /v1/admission/{admissionId}/emr-sections:
+    get:
+      summary: 获取病历各章节文本
+      operationId: getEmrSections
+      tags:
+        - 病历文书
+      parameters:
+        - name: admissionId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+  /v1/admission/{admissionId}/orders:
+    get:
+      summary: 获取医嘱数据
+      operationId: getOrders
+      tags:
+        - 医嘱信息
+      parameters:
+        - name: admissionId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: startTime
+          in: query
+          schema:
+            type: string
+            format: date-time
+          description: 开始时间 yyyy-MM-dd HH:mm:ss
+        - name: endTime
+          in: query
+          schema:
+            type: string
+            format: date-time
+          description: 结束时间
+        - name: orderType
+          in: query
+          schema:
+            type: string
+            enum: [LONG_TERM, TEMP, ALL]
+            default: ALL
+          description: 医嘱类型
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+  /v1/admission/{admissionId}/rescue-records:
+    get:
+      summary: 获取抢救记录
+      operationId: getRescueRecords
+      tags:
+        - 医嘱信息
+      parameters:
+        - name: admissionId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+  /v1/patient/{patientId}/previous-admission:
+    get:
+      summary: 获取上一份住院病历
+      operationId: getPreviousAdmission
+      tags:
+        - 患者信息
+      parameters:
+        - name: patientId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: currentAdmissionId
+          in: query
+          schema:
+            type: string
+          description: 当前住院号，用于排除
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+  /v1/admission/{admissionId}/course-records:
+    get:
+      summary: 获取病程记录列表
+      operationId: getCourseRecords
+      tags:
+        - 病程记录
+      parameters:
+        - name: admissionId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+components:
+  schemas:
+    ApiResponse:
+      type: object
+      properties:
+        code:
+          type: integer
+          example: 200
+        message:
+          type: string
+          example: success
+        data:
+          type: object
+
+    AdmissionInfo:
+      type: object
+      properties:
+        admissionId:
+          type: string
+        patientId:
+          type: string
+        patientName:
+          type: string
+        department:
+          type: string
+        admissionTime:
+          type: string
+          format: date-time
+        dischargeTime:
+          type: string
+          format: date-time
+        age:
+          type: integer
+        sexCode:
+          type: string
+          enum: [M, F, U]
+
+    EmrSections:
+      type: object
+      properties:
+        chiefComplaint:
+          type: string
+        presentIllness:
+          type: string
+        pastHistory:
+          type: string
+        personalHistory:
+          type: string
+        familyHistory:
+          type: string
+        allergyHistory:
+          type: string
+        physicalExam:
+          type: string
+        auxiliaryExam:
+          type: string
+        initialDiagnosis:
+          type: array
+          items:
+            type: string
+        admissionDiagnosis:
+          type: array
+          items:
+            type: string
+        firstCourseRecord:
+          type: string
+        dailyCourseRecords:
+          type: array
+          items:
+            type: string
+        preOpDiscussion:
+          type: string
+        difficultCaseDiscussion:
+          type: string
+        handoverRecord:
+          type: string
+        takeoverRecord:
+          type: string
+        transferOutRecord:
+          type: string
+        transferInRecord:
+          type: string
+        deathDiscussion:
+          type: string
+        bloodTransfusionRecord:
+          type: string
+        criticalValueRecords:
+          type: array
+          items:
+            type: string
+
+    OrderItem:
+      type: object
+      properties:
+        orderId:
+          type: string
+        orderTime:
+          type: string
+          format: date-time
+        startTime:
+          type: string
+          format: date-time
+        orderName:
+          type: string
+        orderType:
+          type: string
+          enum: [LONG_TERM, TEMP]
+        category:
+          type: string
+          enum: [DRUG, EXAM, SURGERY, NURSING, OTHER]
+        dosage:
+          type: string
+        frequency:
+          type: string
+        route:
+          type: string
+        status:
+          type: string
+          enum: [EXECUTED, STOPPED, PENDING]
+        stopTime:
+          type: string
+          format: date-time
+
+    OrdersResponse:
+      type: object
+      properties:
+        orders:
+          type: array
+          items:
+            $ref: '#/components/schemas/OrderItem'
+
+    CourseRecord:
+      type: object
+      properties:
+        recordId:
+          type: string
+        recordType:
+          type: string
+          enum: [FIRST_COURSE, DAILY_COURSE, SUPERIOR_VISIT, POST_OP, CRITICAL, OTHER]
+        recordTime:
+          type: string
+          format: date-time
+        title:
+          type: string
+        content:
+          type: string
+        physicianName:
+          type: string
+
+    CourseRecordsResponse:
+      type: object
+      properties:
+        courseRecords:
+          type: array
+          items:
+            $ref: '#/components/schemas/CourseRecord'
+
+    RescueRecord:
+      type: object
+      properties:
+        hasRescue:
+          type: boolean
+        rescueRecords:
+          type: array
+          items:
+            type: object
+            properties:
+              rescueTime:
+                type: string
+                format: date-time
+              rescueContent:
+                type: string

@@ -178,6 +178,19 @@ export default function ConfigPanel({ open, onClose, node, onUpdate }) {
             <Option value="dataCheck">数据判断</Option>
             <Option value="timeCheck">时间判断</Option>
           </OptGroup>
+          <OptGroup label="质控计算符">
+            <Option value="lengthCheck">长度校验</Option>
+            <Option value="isBlank">空值校验</Option>
+            <Option value="similarity">相似度比对</Option>
+            <Option value="arrayLength">集合长度</Option>
+            <Option value="arrayIntersect">集合交集</Option>
+          </OptGroup>
+          <OptGroup label="NLP计算符">
+            <Option value="medicalNer">医学实体提取</Option>
+            <Option value="negationCheck">否定检测</Option>
+            <Option value="tokenSimilarity">分词相似度</Option>
+            <Option value="allNegated">全否定检测</Option>
+          </OptGroup>
         </Select>
       </Form.Item>
       {selectedOperator === 'multiRegexMatch' ? (
@@ -260,6 +273,68 @@ export default function ConfigPanel({ open, onClose, node, onUpdate }) {
             <Input placeholder="留空则不限制" />
           </Form.Item>
         </>
+      ) : selectedOperator === 'lengthCheck' ? (
+        <>
+          <Form.Item name="value" label="比较符" rules={[{ required: true }]}>
+            <Select placeholder="如: >">
+               <Option value=">">大于</Option>
+               <Option value="<">小于</Option>
+               <Option value=">=">大于等于</Option>
+               <Option value="<=">小于等于</Option>
+               <Option value="==">等于</Option>
+               <Option value="!=">不等于</Option>
+            </Select>
+          </Form.Item>
+          <Form.Item name="extraValue1" label="长度阈值" rules={[{ required: true }]}>
+            <Input placeholder="如: 10" type="number" />
+          </Form.Item>
+        </>
+      ) : selectedOperator === 'isBlank' ? (
+        <></>
+      ) : selectedOperator === 'similarity' ? (
+        <>
+          <Form.Item name="value" label="对比字段名" rules={[{ required: true }]}>
+            <Input placeholder="如: otherCourseRecord" />
+          </Form.Item>
+          <Form.Item name="extraValue1" label="相似度阈值" rules={[{ required: true }]}>
+            <Input placeholder="如: 0.995" />
+          </Form.Item>
+        </>
+      ) : selectedOperator === 'arrayLength' ? (
+        <>
+          <Form.Item name="value" label="比较符" rules={[{ required: true }]}>
+            <Select placeholder="如: >">
+               <Option value=">">大于</Option>
+               <Option value="<">小于</Option>
+               <Option value=">=">大于等于</Option>
+               <Option value="<=">小于等于</Option>
+               <Option value="==">等于</Option>
+               <Option value="!=">不等于</Option>
+            </Select>
+          </Form.Item>
+          <Form.Item name="extraValue1" label="元素个数阈值" rules={[{ required: true }]}>
+            <Input placeholder="如: 5" type="number" />
+          </Form.Item>
+        </>
+      ) : selectedOperator === 'arrayIntersect' ? (
+        <>
+          <Form.Item name="value" label="对比集合字段名" rules={[{ required: true }]}>
+            <Input placeholder="如: otherSymptoms" />
+          </Form.Item>
+          <Form.Item name="extraValue1" label="比较符" rules={[{ required: true }]}>
+            <Select placeholder="如: ==">
+               <Option value=">">大于</Option>
+               <Option value="<">小于</Option>
+               <Option value=">=">大于等于</Option>
+               <Option value="<=">小于等于</Option>
+               <Option value="==">等于</Option>
+               <Option value="!=">不等于</Option>
+            </Select>
+          </Form.Item>
+          <Form.Item name="extraValue2" label="交集个数阈值" rules={[{ required: true }]}>
+            <Input placeholder="如: 0" type="number" />
+          </Form.Item>
+        </>
       ) : selectedOperator === 'regexMatch' ? (
         <>
           <Form.Item name="value" label="正则表达式">
@@ -267,6 +342,50 @@ export default function ConfigPanel({ open, onClose, node, onUpdate }) {
           </Form.Item>
           <DictSelect name="dictCode" label="或选择正则字典" />
           <DictAttrSelect name="dictAttr" />
+        </>
+      ) : selectedOperator === 'medicalNer' ? (
+        <>
+          <Form.Item name="value" label="实体类型" rules={[{ required: true }]}>
+            <Select placeholder="选择要提取的医学实体类型">
+              <Option value="symptoms">症状</Option>
+              <Option value="signs">体征</Option>
+              <Option value="drugs">药品</Option>
+              <Option value="exams">检查</Option>
+              <Option value="surgeries">手术</Option>
+              <Option value="diseases">疾病</Option>
+            </Select>
+          </Form.Item>
+          <Form.Item name="extraValue1" label="特定实体（可选）">
+            <Input placeholder="如: 发热；留空则检测该类任意实体" />
+          </Form.Item>
+        </>
+      ) : selectedOperator === 'negationCheck' ? (
+        <>
+          <Form.Item name="value" label="实体名称" rules={[{ required: true }]}>
+            <Input placeholder="如: 发热" />
+          </Form.Item>
+        </>
+      ) : selectedOperator === 'tokenSimilarity' ? (
+        <>
+          <Form.Item name="value" label="对比字段名" rules={[{ required: true }]}>
+            <Input placeholder="如: otherCourseRecord" />
+          </Form.Item>
+          <Form.Item name="extraValue1" label="相似度阈值" rules={[{ required: true }]}>
+            <Input placeholder="如: 0.95" />
+          </Form.Item>
+        </>
+      ) : selectedOperator === 'allNegated' ? (
+        <>
+          <Form.Item name="value" label="实体类型" rules={[{ required: true }]}>
+            <Select placeholder="选择要检测的医学实体类型">
+              <Option value="symptoms">症状</Option>
+              <Option value="signs">体征</Option>
+              <Option value="drugs">药品</Option>
+              <Option value="exams">检查</Option>
+              <Option value="surgeries">手术</Option>
+              <Option value="diseases">疾病</Option>
+            </Select>
+          </Form.Item>
         </>
       ) : (
         <Form.Item name="value" label="条件值" rules={[{ required: true }]}>
