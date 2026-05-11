@@ -29,16 +29,25 @@ public class ResultConfig {
     @Column(name = "result_category", length = 64)
     private String resultCategory; // 结果分类：禁忌类别、药品禁忌级别等
 
+    @Column(name = "content", columnDefinition = "TEXT")
+    private String content; // 结果内容/提示文案，可在画布中自定义
+
     @Column(name = "description", length = 512)
     private String description;
 
     @Column(name = "priority", nullable = false)
     private Integer priority = 0;
 
+    @Column(name = "condition_model_id")
+    private Long conditionModelId;
+
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "condition_model_id")
+    @JoinColumn(name = "condition_model_id", insertable = false, updatable = false)
     @JsonIgnoreProperties({"hibernateLazyInitializer", "handler", "resultConfigs"})
     private ConditionModel conditionModel;
+
+    @Column(name = "metadata", columnDefinition = "TEXT")
+    private String metadata; // 扩展属性 JSON
 
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)

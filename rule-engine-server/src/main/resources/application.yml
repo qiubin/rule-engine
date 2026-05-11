@@ -32,6 +32,7 @@ management:
 his:
   enabled: false
   base-url: ""
+  adapter-path: "/api/v1/adapter/emr"
   auth-type: bearer
   auth-token: ""
   api-key: ""

@@ -463,4 +463,116 @@ public class RuleScriptUtils {
         return null;
     }
 
+    /**
+     * 11. 字段比对：比较两个字段的值，支持时间差、数值差、字符串相等。
+     * 应用场景：入院时间与病史采集时间差(R1)、脉搏与心率矛盾(R42)、长期医嘱时间校验(R3)。
+     *
+     * @param valA        字段A的值
+     * @param valB        字段B的值
+     * @param compareType 比较类型：TIME_DIFF_HOUR/MINUTE/DAY, NUMERIC_DIFF, STRING_EQ
+     * @param op          比较符：>, <, ==, >=, <=, !=
+     * @param threshold   阈值
+     * @return 命中条件返回 TRUE
+     */
+    public static boolean fieldCompare(Object valA, Object valB, String compareType, String op, String threshold) {
+        if (valA == null || valB == null || !StringUtils.hasText(compareType)
+                || !StringUtils.hasText(op) || !StringUtils.hasText(threshold)) {
+            return false;
+        }
+
+        double diff;
+        switch (compareType.trim()) {
+            case "TIME_DIFF_HOUR":
+                diff = timeDiff(valA, valB, ChronoUnit.HOURS);
+                break;
+            case "TIME_DIFF_MINUTE":
+                diff = timeDiff(valA, valB, ChronoUnit.MINUTES);
+                break;
+            case "TIME_DIFF_DAY":
+                diff = timeDiff(valA, valB, ChronoUnit.DAYS);
+                break;
+            case "NUMERIC_DIFF":
+                diff = Math.abs(toDouble(valA) - toDouble(valB));
+                break;
+            case "STRING_EQ":
+                return compareString(String.valueOf(valA), String.valueOf(valB), op);
+            default:
+                log.warn("不支持的 fieldCompare 比较类型: {}", compareType);
+                return false;
+        }
+
+        return compareNumeric(diff, op, Double.parseDouble(threshold));
+    }
+
+    private static double timeDiff(Object valA, Object valB, ChronoUnit unit) {
+        LocalDateTime dtA = parseDateTime(valA);
+        LocalDateTime dtB = parseDateTime(valB);
+        if (dtA == null || dtB == null) {
+            return Double.MAX_VALUE;
+        }
+        return Math.abs(dtA.until(dtB, unit));
+    }
+
+    private static LocalDateTime parseDateTime(Object value) {
+        if (value == null) return null;
+        String s = String.valueOf(value).trim();
+        if (!StringUtils.hasText(s)) return null;
+
+        // 尝试多种格式
+        String[] patterns = {
+            "yyyy-MM-dd HH:mm:ss",
+            "yyyy-MM-dd HH:mm",
+            "yyyy-MM-dd",
+            "yyyy/MM/dd HH:mm:ss",
+            "yyyy/MM/dd HH:mm",
+            "yyyy/MM/dd",
+            "yyyy年MM月dd日 HH:mm:ss",
+            "yyyy年MM月dd日 HH:mm",
+            "yyyy年MM月dd日",
+        };
+        for (String p : patterns) {
+            try {
+                return LocalDateTime.parse(s, DateTimeFormatter.ofPattern(p));
+            } catch (Exception e) {
+                // 继续尝试下一种格式
+            }
+        }
+        log.warn("无法解析时间: {}", s);
+        return null;
+    }
+
+    private static double toDouble(Object value) {
+        if (value == null) return 0;
+        String s = String.valueOf(value).trim();
+        try {
+            return Double.parseDouble(s);
+        } catch (NumberFormatException e) {
+            return 0;
+        }
+    }
+
+    private static boolean compareNumeric(double diff, String op, double threshold) {
+        switch (op.trim()) {
+            case ">": return diff > threshold;
+            case "<": return diff < threshold;
+            case "==": case "=": return Double.compare(diff, threshold) == 0;
+            case ">=": return diff >= threshold;
+            case "<=": return diff <= threshold;
+            case "!=": return Double.compare(diff, threshold) != 0;
+            default:
+                log.warn("不支持的 fieldCompare 操作符: {}", op);
+                return false;
+        }
+    }
+
+    private static boolean compareString(String a, String b, String op) {
+        switch (op.trim()) {
+            case "==": case "=": return a.equals(b);
+            case "!=": return !a.equals(b);
+            default:
+                log.warn("STRING_EQ 只支持 == 和 !=, 当前: {}", op);
+                return false;
+        }
+    }
+
 }

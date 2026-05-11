@@ -1,14 +1,14 @@
-import React, { useState, useEffect } from 'react'
-import { Card, Table, Button, Modal, Form, Input, Select, Tag, message, Popconfirm } from 'antd'
-import { PlusOutlined, EditOutlined, DeleteOutlined, SyncOutlined } from '@ant-design/icons'
+import React, { useState, useEffect, useMemo, useCallback } from 'react'
+import { Layout, Table, Button, Modal, Form, Input, Select, Tag, message, Popconfirm, Card, Tree } from 'antd'
+import { PlusOutlined, EditOutlined, DeleteOutlined, SyncOutlined, FolderOutlined, FileOutlined } from '@ant-design/icons'
 import axios from 'axios'
 
+const { Sider, Content } = Layout
 const CAT_API = '/api/v1/condition-model-categories'
 const DE_API = '/api/v1/data-elements'
 const DS_API = '/api/v1/data-sets'
 const CM_API = '/api/v1/condition-models'
 
-// 数据类型与默认计算符的映射
 const TYPE_OPERATORS = {
   'NUMERIC': ['==', '!=', '>', '<'],
   'STRING': ['==', '!=', 'contains', 'regex_match'],
@@ -18,23 +18,248 @@ const TYPE_OPERATORS = {
   'SCRIPT': ['==']
 }
 
+function buildConditionTree(conditions, dataElements, dataSets, categories) {
+  // ========== 数据集视图 ==========
+  const dsRoot = []
+  const l1Map = new Map()
+
+  dataSets.forEach(ds => {
+    const l1Code = ds.catL1Code || ''
+    const l1Name = ds.catL1Name || '未分类'
+    const l2Code = ds.catL2Code || ''
+    const l2Name = ds.catL2Name || '未分类'
+    const l3Code = ds.catL3Code || ''
+    const l3Name = ds.catL3Name || '未分类'
+
+    const hasCategory = l1Code || l2Code || l3Code
+
+    if (!hasCategory) {
+      dsRoot.push({
+        title: `${ds.name} (${ds.code})`,
+        key: `ds-${ds.id}`,
+        isLeaf: true,
+        datasetId: ds.id,
+        icon: <FileOutlined />,
+      })
+      return
+    }
+
+    const l1Key = `dsl1-${l1Code}`
+    let l1Node = l1Map.get(l1Key)
+    if (!l1Node) {
+      l1Node = { title: l1Name, key: l1Key, icon: <FolderOutlined />, children: [] }
+      dsRoot.push(l1Node)
+      l1Map.set(l1Key, l1Node)
+    }
+
+    const l2Key = `${l1Key}--l2-${l2Code || '_none'}`
+    let l2Node = l1Node.children.find(n => n.key === l2Key)
+    if (!l2Node) {
+      l2Node = { title: l2Name, key: l2Key, icon: <FolderOutlined />, children: [] }
+      l1Node.children.push(l2Node)
+    }
+
+    const l3Key = `${l2Key}--l3-${l3Code || '_none'}`
+    let l3Node = l2Node.children.find(n => n.key === l3Key)
+    if (!l3Node) {
+      l3Node = { title: l3Name, key: l3Key, icon: <FolderOutlined />, children: [] }
+      l2Node.children.push(l3Node)
+    }
+
+    l3Node.children.push({
+      title: ds.name,
+      key: `ds-${ds.id}`,
+      isLeaf: true,
+      datasetId: ds.id,
+      icon: <FileOutlined />,
+    })
+  })
+
+  const collapseRedundant = (nodes) => {
+    const result = []
+    for (const node of nodes) {
+      if (node.isLeaf) {
+        result.push(node)
+        continue
+      }
+      const children = collapseRedundant(node.children)
+      if (children.length === 1 && children[0].isLeaf && children[0].title === node.title) {
+        result.push(children[0])
+      } else {
+        result.push({ ...node, children })
+      }
+    }
+    return result
+  }
+
+  const collapsedDsRoot = collapseRedundant(dsRoot)
+
+  const sortNodes = (nodes) => {
+    nodes.sort((a, b) => (a.title || '').localeCompare(b.title || ''))
+    nodes.forEach(n => { if (n.children) sortNodes(n.children) })
+  }
+  sortNodes(collapsedDsRoot)
+
+  // ========== 条件分类视图 ==========
+  const childrenMap = new Map()
+  for (const cat of categories) {
+    const pId = cat.parentId == null ? 'root' : cat.parentId
+    if (!childrenMap.has(pId)) childrenMap.set(pId, [])
+    childrenMap.get(pId).push(cat)
+  }
+
+  const buildCat = (parentId) => {
+    const pId = parentId == null ? 'root' : parentId
+    const nodes = []
+    const cats = childrenMap.get(pId) || []
+    cats.sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0) || (a.name || '').localeCompare(b.name || ''))
+
+    for (const cat of cats) {
+      if (cat.code === 'RESULT_CONDITION') continue; // 过滤掉结果类型，专由结果管理页面处理
+      const children = buildCat(cat.id)
+      nodes.push({
+        title: cat.name,
+        key: `cat-${cat.id}`,
+        categoryId: cat.id,
+        icon: <FolderOutlined />,
+        children,
+      })
+    }
+    return nodes
+  }
+
+  const catRoot = buildCat(null)
+
+  // ========== 合并为混合树 ==========
+  const root = []
+  if (collapsedDsRoot.length > 0) {
+    root.push({ title: '数据集分类', key: 'view-ds', icon: <FolderOutlined />, children: collapsedDsRoot })
+  }
+  if (catRoot.length > 0) {
+    root.push({ title: '条件分类', key: 'view-cat', icon: <FolderOutlined />, children: catRoot })
+  }
+  return root
+}
+
 export default function ConditionModelMgr() {
-  // 条件分类
+  const [conditions, setConditions] = useState([])
   const [categories, setCategories] = useState([])
+  const [dataElements, setDataElements] = useState([])
+  const [dataSets, setDataSets] = useState([])
+  const [selectedTreeKey, setSelectedTreeKey] = useState(null)
+  const [selectedCmIds, setSelectedCmIds] = useState([])
+  const [loading, setLoading] = useState(false)
+
   const [catModalOpen, setCatModalOpen] = useState(false)
   const [editingCat, setEditingCat] = useState(null)
   const [catForm] = Form.useForm()
 
-  // 条件
-  const [conditions, setConditions] = useState([])
-  const [dataElements, setDataElements] = useState([])
-  const [dataSets, setDataSets] = useState([])
-  const [selectedCatId, setSelectedCatId] = useState(null)
-  const [loading, setLoading] = useState(false)
-
   const [cmModalOpen, setCmModalOpen] = useState(false)
   const [editingCm, setEditingCm] = useState(null)
   const [cmForm] = Form.useForm()
+
+  const treeData = useMemo(() => buildConditionTree(conditions, dataElements, dataSets, categories), [conditions, dataElements, dataSets, categories])
+
+  const nodeMap = useMemo(() => {
+    const map = new Map()
+    const walk = (nodes) => {
+      for (const node of nodes) {
+        map.set(node.key, node)
+        if (node.children) walk(node.children)
+      }
+    }
+    walk(treeData)
+    return map
+  }, [treeData])
+
+  const catCodeToId = useMemo(() => {
+    const map = new Map()
+    for (const cat of categories) {
+      if (cat.code && cat.code.startsWith('CAT_')) {
+        map.set(cat.code.replace('CAT_', ''), cat.id)
+      }
+    }
+    return map
+  }, [categories])
+
+  const selectedCatId = useMemo(() => {
+    if (!selectedTreeKey) return null
+    if (selectedTreeKey.startsWith('cat-')) {
+      return Number(selectedTreeKey.replace('cat-', '')) || null
+    }
+    if (selectedTreeKey.startsWith('dsl1-')) {
+      const catL1Code = selectedTreeKey.replace('dsl1-', '').split('--')[0]
+      return catCodeToId.get(catL1Code) || null
+    }
+    if (selectedTreeKey.startsWith('cm-')) {
+      const cmId = Number(selectedTreeKey.replace('cm-', ''))
+      const cm = conditions.find(c => c.id === cmId)
+      return cm?.categoryId || null
+    }
+    return null
+  }, [selectedTreeKey, conditions, catCodeToId])
+
+  const selectedCmInfo = useMemo(() => {
+    if (!selectedTreeKey || !selectedTreeKey.startsWith('cm-')) return null
+    const cmId = Number(selectedTreeKey.replace('cm-', ''))
+    return conditions.find(c => c.id === cmId) || null
+  }, [selectedTreeKey, conditions])
+
+  const selectedL1Info = useMemo(() => {
+    if (!selectedTreeKey) return null
+    if (selectedTreeKey.startsWith('cat-')) {
+      const catId = Number(selectedTreeKey.replace('cat-', ''))
+      return categories.find(c => c.id === catId) || null
+    }
+    if (selectedTreeKey.startsWith('dsl1-')) {
+      const catL1Code = selectedTreeKey.replace('dsl1-', '').split('--')[0]
+      const catId = catCodeToId.get(catL1Code)
+      return catId ? categories.find(c => c.id === catId) || null : null
+    }
+    return null
+  }, [selectedTreeKey, categories, catCodeToId])
+
+  const handleTreeSelect = useCallback((selectedKeys) => {
+    const key = selectedKeys[0]
+    setSelectedTreeKey(key || null)
+    if (!key) {
+      setSelectedCmIds([])
+      return
+    }
+    if (key.startsWith('cm-')) {
+      const cmId = Number(key.replace('cm-', ''))
+      setSelectedCmIds([cmId])
+    } else {
+      const node = nodeMap.get(key)
+      if (node) {
+        const cIds = []
+        const dsIds = []
+        const catIds = []
+        const walk = (n) => {
+          if (n.isLeaf && n.conditionId) cIds.push(n.conditionId)
+          if (n.isLeaf && n.datasetId) dsIds.push(n.datasetId)
+          if (n.categoryId) catIds.push(n.categoryId)
+          if (n.children) n.children.forEach(walk)
+        }
+        walk(node)
+
+        let finalIds = [...cIds]
+        if (dsIds.length > 0) {
+          const deIds = dataElements.filter(de => dsIds.includes(de.datasetId)).map(de => de.id)
+          const conditionIdsFromDs = conditions.filter(cm => deIds.includes(cm.dataElementId)).map(cm => cm.id)
+          finalIds = [...finalIds, ...conditionIdsFromDs]
+        }
+        if (catIds.length > 0) {
+          const conditionIdsFromCat = conditions.filter(cm => catIds.includes(cm.categoryId)).map(cm => cm.id)
+          finalIds = [...finalIds, ...conditionIdsFromCat]
+        }
+        
+        setSelectedCmIds(finalIds)
+      } else {
+        setSelectedCmIds([])
+      }
+    }
+  }, [nodeMap, dataElements, conditions])
 
   const fetchData = async () => {
     setLoading(true)
@@ -46,9 +271,6 @@ export default function ConditionModelMgr() {
       setCategories(catRes.data)
       setDataElements(deRes.data)
       setDataSets(dsRes.data)
-      if (catRes.data.length > 0 && !selectedCatId) {
-        setSelectedCatId(catRes.data[0].id)
-      }
     } catch (e) {
       message.error('加载失败')
     }
@@ -57,11 +279,14 @@ export default function ConditionModelMgr() {
 
   useEffect(() => { fetchData() }, [])
 
-  const filteredConditions = selectedCatId
-    ? conditions.filter(c => c.categoryId === selectedCatId)
+  const filteredConditions = selectedTreeKey
+    ? conditions.filter(c => selectedCmIds.includes(c.id))
     : conditions
 
-  // ========== 条件分类操作 ==========
+  const getDeName = (id) => dataElements.find(d => d.id === id)?.name || '-'
+  const getCatName = (id) => categories.find(c => c.id === id)?.name || '-'
+
+  // 分类操作
   const handleSaveCat = async () => {
     const values = await catForm.validateFields()
     try {
@@ -82,14 +307,13 @@ export default function ConditionModelMgr() {
     try {
       await axios.delete(`${CAT_API}/${id}`)
       message.success('删除成功')
-      if (selectedCatId === id) setSelectedCatId(null)
       fetchData()
     } catch (e) {
       message.error(e.response?.data?.message || '删除失败')
     }
   }
 
-  // ========== 条件操作 ==========
+  // 条件操作
   const handleSaveCm = async () => {
     const values = await cmForm.validateFields()
     try {
@@ -125,6 +349,8 @@ export default function ConditionModelMgr() {
     try {
       const res = await axios.post(`${CM_API}/sync`)
       message.success(`同步完成：${res.data.categoryCount} 个分类，${res.data.conditionCount} 个条件`)
+      setSelectedTreeKey(null)
+      setSelectedCmIds([])
       fetchData()
     } catch (e) {
       message.error(e.response?.data?.message || '同步失败')
@@ -135,9 +361,9 @@ export default function ConditionModelMgr() {
     const de = dataElements.find(d => d.id === deId)
     if (de) {
       const defaultOps = TYPE_OPERATORS[de.dataType] || []
-      cmForm.setFieldsValue({ 
-        code: de.code, 
-        name: de.name, 
+      cmForm.setFieldsValue({
+        code: de.code,
+        name: de.name,
         dataType: de.dataType,
         operators: defaultOps
       })
@@ -154,34 +380,6 @@ export default function ConditionModelMgr() {
     cmForm.setFieldsValue({ dataElementId: undefined, code: undefined, name: undefined, dataType: undefined })
   }
 
-  const getDeName = (id) => dataElements.find(d => d.id === id)?.name || '-'
-  const getCatName = (id) => categories.find(c => c.id === id)?.name || '-'
-
-  // 条件分类表格
-  const catColumns = [
-    { title: 'ID', dataIndex: 'id', width: 50 },
-    { title: '编码', dataIndex: 'code' },
-    { title: '名称', dataIndex: 'name' },
-    { title: '描述', dataIndex: 'description', ellipsis: true },
-    { title: '排序', dataIndex: 'sortOrder', width: 70 },
-    {
-      title: '操作', width: 120,
-      render: (_, record) => (
-        <>
-          <Button type="link" size="small" icon={<EditOutlined />} onClick={() => {
-            setEditingCat(record)
-            catForm.setFieldsValue(record)
-            setCatModalOpen(true)
-          }} />
-          <Popconfirm title="确认删除?" onConfirm={() => handleDeleteCat(record.id)}>
-            <Button type="link" size="small" danger icon={<DeleteOutlined />} />
-          </Popconfirm>
-        </>
-      )
-    }
-  ]
-
-  // 条件表格
   const cmColumns = [
     { title: 'ID', dataIndex: 'id', width: 50 },
     { title: '编码', dataIndex: 'code' },
@@ -219,23 +417,23 @@ export default function ConditionModelMgr() {
     <div style={{ padding: 24 }}>
       <h2>条件分类与条件管理</h2>
 
-      {/* 条件分类 */}
-      <Card title="条件分类" size="small" style={{ marginBottom: 16 }}
-        extra={
-          <Button type="primary" size="small" icon={<PlusOutlined />} onClick={() => {
-            setEditingCat(null)
-            catForm.resetFields()
-            setCatModalOpen(true)
-          }}>新增分类</Button>
-        }
-      >
-        <Table rowKey="id" size="small" columns={catColumns} dataSource={categories} pagination={false} bordered />
-      </Card>
-
-      {/* 条件 */}
-      <Card title="条件管理" size="small"
-        extra={
-          <div style={{ display: 'flex', gap: 8 }}>
+      <Layout style={{ minHeight: 500, background: '#fff' }}>
+        {/* 左侧分类树 */}
+        <Sider width={320} style={{ background: '#fafafa', borderRight: '1px solid #f0f0f0', padding: 12 }}>
+          <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
+            <Button
+              type="primary"
+              size="small"
+              icon={<PlusOutlined />}
+              block
+              onClick={() => {
+                setEditingCat(null)
+                catForm.resetFields()
+                setCatModalOpen(true)
+              }}
+            >
+              新增分类
+            </Button>
             <Popconfirm
               title="确认同步?"
               description="同步将清空现有条件分类和条件，并从数据集/数据元重新构建。已有画布中的条件引用将失效，是否继续？"
@@ -244,27 +442,92 @@ export default function ConditionModelMgr() {
               cancelText="取消"
               okButtonProps={{ danger: true }}
             >
-              <Button danger size="small" icon={<SyncOutlined />}>同步</Button>
+              <Button danger size="small" icon={<SyncOutlined />} block>同步</Button>
             </Popconfirm>
-            <Select
-              placeholder="选择分类筛选"
-              style={{ width: 200 }}
-              value={selectedCatId}
-              onChange={setSelectedCatId}
-              allowClear
-            >
-              {categories.map(c => <Select.Option key={c.id} value={c.id}>{c.name}</Select.Option>)}
-            </Select>
-            <Button type="primary" size="small" icon={<PlusOutlined />} disabled={!selectedCatId} onClick={() => {
-              setEditingCm(null)
-              cmForm.resetFields()
-              setCmModalOpen(true)
-            }}>新增条件</Button>
           </div>
-        }
-      >
-        <Table rowKey="id" size="small" columns={cmColumns} dataSource={filteredConditions} loading={loading} bordered />
-      </Card>
+          <Tree
+            treeData={treeData}
+            selectedKeys={selectedTreeKey ? [selectedTreeKey] : []}
+            onSelect={handleTreeSelect}
+            showIcon
+            defaultExpandAll
+          />
+        </Sider>
+
+        {/* 右侧内容 */}
+        <Content style={{ padding: '0 16px' }}>
+          {/* 选中节点信息卡片 */}
+          {selectedCmInfo ? (
+            <Card
+              size="small"
+              style={{ marginBottom: 16 }}
+              title={
+                <span>
+                  <FileOutlined style={{ marginRight: 8 }} />
+                  条件: {selectedCmInfo.name}
+                </span>
+              }
+            >
+              <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap' }}>
+                <span><strong>编码:</strong> {selectedCmInfo.code}</span>
+                <span><strong>分类:</strong> {getCatName(selectedCmInfo.categoryId)}</span>
+                <span><strong>数据类型:</strong> {selectedCmInfo.dataType}</span>
+                <span><strong>数据元:</strong> {getDeName(selectedCmInfo.dataElementId)}</span>
+                <span><strong>用途:</strong> {selectedCmInfo.nodeUsage}</span>
+              </div>
+            </Card>
+          ) : selectedL1Info ? (
+            <Card
+              size="small"
+              style={{ marginBottom: 16 }}
+              title={
+                <span>
+                  <FolderOutlined style={{ marginRight: 8 }} />
+                  分类: {selectedL1Info.name}
+                </span>
+              }
+              extra={
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <Button size="small" icon={<EditOutlined />} onClick={() => {
+                    setEditingCat(selectedL1Info)
+                    catForm.setFieldsValue(selectedL1Info)
+                    setCatModalOpen(true)
+                  }}>编辑</Button>
+                  <Popconfirm title="确认删除?" onConfirm={() => handleDeleteCat(selectedL1Info.id)}>
+                    <Button size="small" danger icon={<DeleteOutlined />}>删除</Button>
+                  </Popconfirm>
+                </div>
+              }
+            >
+              <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap' }}>
+                <span><strong>编码:</strong> {selectedL1Info.code}</span>
+                <span><strong>描述:</strong> {selectedL1Info.description || '-'}</span>
+                <span><strong>排序:</strong> {selectedL1Info.sortOrder}</span>
+              </div>
+            </Card>
+          ) : selectedTreeKey ? (
+            <Card size="small" style={{ marginBottom: 16 }}>
+              <FolderOutlined style={{ marginRight: 8 }} />
+              已选择分类节点，共包含 {selectedCmIds.length} 个条件
+            </Card>
+          ) : null}
+
+          {/* 条件表格 */}
+          <Card
+            title="条件列表"
+            size="small"
+            extra={
+              <Button type="primary" size="small" icon={<PlusOutlined />} disabled={!selectedCatId} onClick={() => {
+                setEditingCm(null)
+                cmForm.resetFields()
+                setCmModalOpen(true)
+              }}>新增条件</Button>
+            }
+          >
+            <Table rowKey="id" size="small" columns={cmColumns} dataSource={filteredConditions} loading={loading} bordered />
+          </Card>
+        </Content>
+      </Layout>
 
       {/* 分类弹窗 */}
       <Modal title={editingCat ? '编辑分类' : '新增分类'} open={catModalOpen} onOk={handleSaveCat} onCancel={() => setCatModalOpen(false)}>

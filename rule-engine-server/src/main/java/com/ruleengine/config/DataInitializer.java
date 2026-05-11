@@ -137,6 +137,8 @@ public class DataInitializer implements CommandLineRunner {
         initRuleTypes();
         initConditionModelCategories();
         initConditionModels();
+        syncResultCategory();
+        initForbiddenTypeCondition();
 
         log.info("基础数据初始化完成");
     }
@@ -432,24 +434,25 @@ public class DataInitializer implements CommandLineRunner {
     }
 
     private void initConditionModelCategories() {
-        if (categoryRepository.count() > 0) {
-            log.info("条件分类已存在，跳过");
-            return;
-        }
-        saveCategory("PATIENT_INFO", "患者信息", "患者基本信息相关", 1);
-        saveCategory("ORDERS", "医嘱信息", "医嘱相关", 2);
-        saveCategory("DIAGNOSIS", "诊断信息", "诊断相关", 3);
-        saveCategory("MEDICAL_RECORD", "病历文书", "病历文书相关", 4);
-        saveCategory("VITAL_SIGNS", "生命体征", "生命体征相关", 5);
+        saveCategoryIfNotExists("PATIENT_INFO", "患者信息", "患者基本信息相关", 1);
+        saveCategoryIfNotExists("ORDERS", "医嘱信息", "医嘱相关", 2);
+        saveCategoryIfNotExists("DIAGNOSIS", "诊断信息", "诊断相关", 3);
+        saveCategoryIfNotExists("MEDICAL_RECORD", "病历文书", "病历文书相关", 4);
+        saveCategoryIfNotExists("VITAL_SIGNS", "生命体征", "生命体征相关", 5);
+        saveCategoryIfNotExists("RESULT_CONDITION", "结果条件", "规则执行结果相关条件", 6);
     }
 
-    private void saveCategory(String code, String name, String description, int sort) {
+    private void saveCategoryIfNotExists(String code, String name, String description, int sort) {
+        if (categoryRepository.findByCode(code).isPresent()) {
+            return;
+        }
         ConditionModelCategory cat = new ConditionModelCategory();
         cat.setCode(code);
         cat.setName(name);
         cat.setDescription(description);
         cat.setSortOrder(sort);
         categoryRepository.save(cat);
+        log.info("创建条件分类: {}", code);
     }
 
     private void initConditionModels() {
@@ -567,5 +570,100 @@ public class DataInitializer implements CommandLineRunner {
         }
 
         conditionModelRepository.save(model);
+    }
+
+    private void syncResultCategory() {
+        categoryRepository.findByCode("RESULT_CONDITION").ifPresent(cat -> {
+            boolean changed = false;
+            if (!"结果类型".equals(cat.getName())) {
+                cat.setName("结果类型");
+                changed = true;
+            }
+            if (!"规则结果相关条件".equals(cat.getDescription())) {
+                cat.setDescription("规则结果相关条件");
+                changed = true;
+            }
+            if (changed) {
+                categoryRepository.save(cat);
+                log.info("更新条件分类 [{}] 为: 结果类型", cat.getCode());
+            }
+        });
+    }
+
+    private void initForbiddenTypeCondition() {
+        DataSet generalSet = dataSetRepository.findByCode("GENERAL").orElse(null);
+        if (generalSet == null) {
+            generalSet = new DataSet();
+            generalSet.setCode("GENERAL");
+            generalSet.setName("通用数据集");
+            generalSet.setDescription("默认通用数据集");
+            dataSetRepository.save(generalSet);
+            log.info("创建通用数据集");
+        }
+
+        DataElement de = dataElementRepository.findByCode("FORBIDDEN_TYPE").orElse(null);
+        if (de == null) {
+            de = new DataElement();
+            de.setCode("FORBIDDEN_TYPE");
+            de.setName("禁忌类别");
+            de.setDataType(DataType.DICTIONARY);
+            de.setDictCode("FORBIDDEN_TYPE");
+            de.setDatasetId(generalSet.getId());
+            dataElementRepository.save(de);
+            log.info("创建数据元: FORBIDDEN_TYPE");
+        }
+
+        ConditionModelCategory resultCat = categoryRepository.findByCode("RESULT_CONDITION").orElse(null);
+        if (resultCat == null) {
+            log.warn("结果类型分类不存在，跳过禁忌类别条件初始化");
+            return;
+        }
+
+        // 创建/获取“禁忌类别”二级分类
+        ConditionModelCategory subCat = categoryRepository.findByCode("FORBIDDEN_TYPE_CAT").orElse(null);
+        if (subCat == null) {
+            subCat = new ConditionModelCategory();
+            subCat.setCode("FORBIDDEN_TYPE_CAT");
+            subCat.setName("禁忌类别");
+            subCat.setDescription("禁忌类别二级分类");
+            subCat.setParentId(resultCat.getId());
+            subCat.setSortOrder(1);
+            categoryRepository.save(subCat);
+            log.info("创建二级分类: 禁忌类别 (parent={})", resultCat.getId());
+        } else if (subCat.getParentId() == null) {
+            subCat.setParentId(resultCat.getId());
+            categoryRepository.save(subCat);
+        }
+
+        String fieldCode = (de.getCamelName() != null && !de.getCamelName().isEmpty())
+                ? de.getCamelName() : de.getCode();
+
+        // 查找或创建条件模型，categoryId 必须指向二级分类
+        ConditionModel existingModel = null;
+        List<ConditionModel> allModels = conditionModelRepository.findAll();
+        for (ConditionModel m : allModels) {
+            if (fieldCode.equals(m.getCode())) {
+                existingModel = m;
+                break;
+            }
+        }
+
+        if (existingModel == null) {
+            ConditionModel model = new ConditionModel();
+            model.setDataElementId(de.getId());
+            model.setCategoryId(subCat.getId());
+            model.setOperators(Collections.singletonList("=="));
+            model.setValueSource(ValueSource.PARAM);
+            model.setNodeUsage(NodeUsage.CONDITION);
+            model.setCode(fieldCode);
+            model.setName(de.getName());
+            model.setDataType(de.getDataType());
+            conditionModelRepository.save(model);
+            log.info("创建条件模型: {}", fieldCode);
+        } else if (!subCat.getId().equals(existingModel.getCategoryId())) {
+            existingModel.setCategoryId(subCat.getId());
+            conditionModelRepository.save(existingModel);
+            log.info("更新条件模型 {} 的分类为二级分类: {}", fieldCode, subCat.getId());
+        }
     }
 }

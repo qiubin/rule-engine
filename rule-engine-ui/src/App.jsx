@@ -4,6 +4,7 @@ import RuleTypeMgr from './pages/RuleTypeMgr'
 import DataElementMgr from './pages/DataElementMgr'
 import DictionaryMgr from './pages/DictionaryMgr'
 import ConditionModelMgr from './pages/ConditionModelMgr'
+import ResultModelMgr from './pages/ResultModelMgr'
 import RuleExecute from './pages/RuleExecute'
 import SystemMenu from './pages/SystemMenu'
 
@@ -44,6 +45,7 @@ function App() {
       case 'dataElements': return <DataElementMgr />
       case 'dictionaries': return <DictionaryMgr />
       case 'models': return <ConditionModelMgr />
+      case 'results': return <ResultModelMgr />
       case 'execute': return <RuleExecute />
       case 'system': return <SystemMenu />
       default: return <RuleTypeMgr />

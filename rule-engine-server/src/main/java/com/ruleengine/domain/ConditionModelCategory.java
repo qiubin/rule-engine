@@ -36,6 +36,9 @@ public class ConditionModelCategory {
     @Column(name = "sort_order")
     private Integer sortOrder = 0;
 
+    @Column(name = "parent_id")
+    private Long parentId;
+
     @Column(name = "status", length = 16)
     @Enumerated(EnumType.STRING)
     private CommonStatus status = CommonStatus.ENABLED;

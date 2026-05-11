@@ -38,10 +38,23 @@ public class EmrDataService {
         }
 
         try {
-            // 1. 当前住院信息
+            // 1. 优先从适配器获取统一数据（datasetList 结构）
+            Map<String, Object> adapterData = hisClient.fetchEmrDataFromAdapter(
+                    patientId, admissionId, null, null, null, null);
+            if (adapterData != null && !adapterData.isEmpty()) {
+                data.putAll(adapterData);
+                log.info("从适配器获取到 {} 个字段", adapterData.size());
+            }
+
+            // 2. 当前住院信息（适配器未覆盖时兜底）
             Map<String, Object> admission = hisClient.getCurrentAdmission(patientId);
             if (admission != null && !admission.isEmpty()) {
-                data.putAll(flattenMap(admission));
+                // 合并：已有字段不覆盖（适配器数据优先）
+                admission.forEach((k, v) -> {
+                    if (v != null && !data.containsKey(k)) {
+                        data.put(k, v);
+                    }
+                });
                 // 如果没传入 admissionId，从当前住院信息中取
                 if (!StringUtils.hasText(admissionId)) {
                     Object admIdObj = admission.get("admissionId");
@@ -51,16 +64,16 @@ public class EmrDataService {
                 }
             }
 
-            // 2. 病历各章节（需要 admissionId）
+            // 2. 病历各章节（需要 admissionId，适配器未覆盖时兜底）
             if (StringUtils.hasText(admissionId)) {
                 Map<String, Object> sections = hisClient.getEmrSections(admissionId);
                 if (sections != null) {
-                    data.putAll(flattenMap(sections));
+                    mergeMap(data, flattenMap(sections));
                 }
 
                 // 3. 医嘱（全部，时间窗由规则侧过滤）
                 List<Map<String, Object>> orders = hisClient.getOrders(admissionId, null, null);
-                if (orders != null) {
+                if (orders != null && !data.containsKey("orders")) {
                     data.put("orders", orders);
                     // 同时提供纯药品名列表，方便规则直接 contains 判断
                     List<String> drugNames = extractDrugNames(orders);
@@ -68,12 +81,14 @@ public class EmrDataService {
                 }
 
                 // 4. 抢救记录标志
-                boolean hasRescue = hisClient.hasRescueRecord(admissionId);
-                data.put("hasRescueRecord", hasRescue);
+                if (!data.containsKey("hasRescueRecord")) {
+                    boolean hasRescue = hisClient.hasRescueRecord(admissionId);
+                    data.put("hasRescueRecord", hasRescue);
+                }
 
                 // 5. 病程记录
                 List<Map<String, Object>> courseRecords = hisClient.getCourseRecords(admissionId);
-                if (courseRecords != null) {
+                if (courseRecords != null && !data.containsKey("courseRecords")) {
                     data.put("courseRecords", courseRecords);
                     // 分类提取：首次病程 / 日常病程 / 上级查房 / 术后
                     extractCourseByType(courseRecords, data);
@@ -145,6 +160,18 @@ public class EmrDataService {
         }
 
         return data;
+    }
+
+    /**
+     * 将 source 中的非 null 字段合并到 target，不覆盖已有字段。
+     */
+    private void mergeMap(Map<String, Object> target, Map<String, Object> source) {
+        if (source == null || target == null) return;
+        for (Map.Entry<String, Object> entry : source.entrySet()) {
+            if (entry.getValue() != null && !target.containsKey(entry.getKey())) {
+                target.put(entry.getKey(), entry.getValue());
+            }
+        }
     }
 
     /**

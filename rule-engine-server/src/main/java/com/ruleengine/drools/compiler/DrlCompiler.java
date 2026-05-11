@@ -211,6 +211,14 @@ public class DrlCompiler {
         String extraValue2 = extra2Node != null && !extra2Node.isNull() ? extra2Node.asText() : "";
         extraValue2 = extraValue2.replace("\\", "\\\\").replace("\"", "\\\"");
 
+        JsonNode extra3Node = config.get("extraValue3");
+        String extraValue3 = extra3Node != null && !extra3Node.isNull() ? extra3Node.asText() : "";
+        extraValue3 = extraValue3.replace("\\", "\\\\").replace("\"", "\\\"");
+
+        JsonNode extra4Node = config.get("extraValue4");
+        String extraValue4 = extra4Node != null && !extra4Node.isNull() ? extra4Node.asText() : "";
+        extraValue4 = extraValue4.replace("\\", "\\\\").replace("\"", "\\\"");
+
         // 读取字典编码配置
         JsonNode dictCodeNode = config.get("dictCode");
         String dictCode = dictCodeNode != null && !dictCodeNode.isNull() ? dictCodeNode.asText() : "";
@@ -304,6 +312,13 @@ public class DrlCompiler {
             String op = extraValue1;
             String threshold = extraValue2;
             return String.format("RuleScriptUtils.arrayIntersect($param.get(\"%s\"), $param.get(\"%s\"), \"%s\", Integer.parseInt(\"%s\"))", field, otherField, op, threshold);
+        } else if ("fieldCompare".equals(operator)) {
+            String fieldA = valueStr;
+            String fieldB = extraValue1;
+            String compareType = extraValue2;
+            String op = extraValue3;
+            String threshold = extraValue4;
+            return String.format("RuleScriptUtils.fieldCompare($param.get(\"%s\"), $param.get(\"%s\"), \"%s\", \"%s\", \"%s\")", fieldA, fieldB, compareType, op, threshold);
         }
         return "true";
     }
@@ -318,6 +333,8 @@ public class DrlCompiler {
         JsonNode resultConfig = data != null && data.has("resultConfig") ? data.get("resultConfig") : null;
         String resultType = resultConfig != null && resultConfig.has("resultType") ? resultConfig.get("resultType").asText() : "DEFAULT";
         String resultValue = resultConfig != null && resultConfig.has("resultValue") ? resultConfig.get("resultValue").asText() : nodeLabel;
+        String content = resultConfig != null && resultConfig.has("content") ? resultConfig.get("content").asText() : "";
+        String metadata = resultConfig != null && resultConfig.has("metadata") ? resultConfig.get("metadata").asText() : "";
         String resultNodeId = resultNode.get("id").asText();
 
         StringBuilder idsBuilder = new StringBuilder();
@@ -339,12 +356,21 @@ public class DrlCompiler {
                 .append("    r.put(\"nodeLabel\", \"").append(nodeLabel).append("\");\n")
                 .append("    r.put(\"resultType\", \"").append(resultType).append("\");\n")
                 .append("    r.put(\"resultValue\", \"").append(resultValue).append("\");\n")
-                .append("    r.put(\"matched\", true);\n")
+                .append("    r.put(\"content\", \"").append(content).append("\");\n");
+        if (!metadata.isEmpty()) {
+            rulesBuilder.append("    r.put(\"metadata\", \"").append(escapeJsonString(metadata)).append("\");\n");
+        }
+        rulesBuilder.append("    r.put(\"matched\", true);\n")
                 .append("    r.put(\"resultNodeId\", \"").append(resultNodeId).append("\");\n")
                 .append("    r.put(\"hitConditionIds\", ").append(idsBuilder.toString()).append(");\n")
                 .append("    result.put(\"result_\" + System.currentTimeMillis(), r);\n")
                 .append("end\n")
                 .append("\n");
+    }
+
+    private String escapeJsonString(String str) {
+        if (str == null) return "";
+        return str.replace("\\", "\\\\").replace("\"", "\\\"").replace("\n", "\\n").replace("\r", "");
     }
 
     private String sanitizePackage(String code) {

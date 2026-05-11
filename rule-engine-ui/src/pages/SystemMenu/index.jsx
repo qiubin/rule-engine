@@ -1,10 +1,12 @@
 import React, { useState } from 'react'
 import ConditionModelMgr from '../ConditionModelMgr'
+import ResultModelMgr from '../ResultModelMgr'
 import DictionaryMgr from '../DictionaryMgr'
 import DataElementMgr from '../DataElementMgr'
 
 const TABS = [
   { key: 'models', label: '条件管理' },
+  { key: 'results', label: '结果管理' },
   { key: 'dictionaries', label: '字典管理' },
   { key: 'dataElements', label: '数据元管理' },
 ]
@@ -15,6 +17,7 @@ export default function SystemMenu() {
   const renderContent = () => {
     switch (activeTab) {
       case 'models': return <ConditionModelMgr />
+      case 'results': return <ResultModelMgr />
       case 'dictionaries': return <DictionaryMgr />
       case 'dataElements': return <DataElementMgr />
       default: return <ConditionModelMgr />

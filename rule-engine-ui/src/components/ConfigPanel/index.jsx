@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react'
-import { Drawer, Form, Input, Select, Button, Radio, Tag } from 'antd'
+import React, { useEffect, useState, useMemo } from 'react'
+import { Drawer, Form, Input, Select, Button, Radio, Tag, Cascader } from 'antd'
 import { SaveOutlined } from '@ant-design/icons'
 import axios from 'axios'
 
@@ -12,6 +12,14 @@ export default function ConfigPanel({ open, onClose, node, onUpdate }) {
   const [dictionaries, setDictionaries] = useState([])
   const [selectedCategoryId, setSelectedCategoryId] = useState(null)
   const [selectedOperator, setSelectedOperator] = useState(null)
+  const [resultConfigs, setResultConfigs] = useState([])
+  const [selectedRcDetail, setSelectedRcDetail] = useState(null)
+
+  // 数据集分类相关
+  const [dataSets, setDataSets] = useState([])
+  const [dataElements, setDataElements] = useState([])
+  const [allConditions, setAllConditions] = useState([])
+  const [selectedDatasetId, setSelectedDatasetId] = useState(null)
 
   useEffect(() => {
     if (node && open) {
@@ -21,17 +29,65 @@ export default function ConfigPanel({ open, onClose, node, onUpdate }) {
         ...node.data?.resultConfig,
       })
       setSelectedOperator(node.data?.conditionConfig?.operator || null)
-      if (node.type === 'condition' || node.type === 'result') {
+      if (node.type === 'condition') {
         fetchCategories()
         fetchDictionaries()
-        const savedCategoryId = node.data?.conditionConfig?.categoryId || node.data?.resultConfig?.categoryId
-        if (savedCategoryId) {
-          setSelectedCategoryId(savedCategoryId)
-          fetchConditionsByCategory(savedCategoryId)
+        fetchDataSets()
+        fetchDataElements()
+        fetchAllConditions()
+        // 尝试反推旧节点的数据集ID
+        const savedCmId = node.data?.conditionConfig?.conditionModelId
+        if (savedCmId) {
+          // 等数据加载完成后再反推，见下方的 useEffect
+          setSelectedCategoryId(null)
+          setSelectedDatasetId(null)
+        }
+      } else if (node.type === 'result') {
+        fetchAllResultConfigs()
+        fetchDictionaries()
+        const savedRcId = node.data?.resultConfig?.resultConfigId
+        if (savedRcId) {
+          const rc = resultConfigs.find(r => r.id === savedRcId)
+          setSelectedRcDetail(rc || null)
+        } else {
+          setSelectedRcDetail(null)
         }
       }
     }
   }, [node, open, form])
+
+  // resultConfigs 加载完成后，回填已保存的选中项详情
+  useEffect(() => {
+    if (node?.type === 'result' && resultConfigs.length > 0) {
+      const savedRcId = node.data?.resultConfig?.resultConfigId
+      if (savedRcId) {
+        const rc = resultConfigs.find(r => r.id === savedRcId)
+        setSelectedRcDetail(rc || null)
+      }
+    }
+  }, [resultConfigs, node])
+
+  // 条件节点：数据加载完成后，反推旧节点的数据集ID
+  useEffect(() => {
+    if (node?.type === 'condition' && allConditions.length > 0 && dataElements.length > 0 && dataSets.length > 0) {
+      const savedCmId = node.data?.conditionConfig?.conditionModelId
+      if (savedCmId) {
+        const cm = allConditions.find(c => c.id === savedCmId)
+        if (cm?.dataElementId) {
+          const de = dataElements.find(d => d.id === cm.dataElementId)
+          if (de?.datasetId) {
+            const ds = dataSets.find(s => s.id === de.datasetId)
+            if (ds) {
+              setSelectedDatasetId(de.datasetId)
+              form.setFieldsValue({
+                datasetId: [ds.catL1Code, ds.catL2Code, ds.catL3Code, ds.id]
+              })
+            }
+          }
+        }
+      }
+    }
+  }, [allConditions, dataElements, dataSets, node, form])
 
   const fetchCategories = async () => {
     try {
@@ -58,21 +114,97 @@ export default function ConfigPanel({ open, onClose, node, onUpdate }) {
     } catch (e) {}
   }
 
+  const fetchAllResultConfigs = async () => {
+    try {
+      const res = await axios.get('/api/v1/result-configs')
+      setResultConfigs(res.data)
+    } catch (e) {}
+  }
+
+  const fetchDataSets = async () => {
+    try {
+      const res = await axios.get('/api/v1/data-sets')
+      setDataSets(res.data)
+    } catch (e) {}
+  }
+
+  const fetchDataElements = async () => {
+    try {
+      const res = await axios.get('/api/v1/data-elements')
+      setDataElements(res.data)
+    } catch (e) {}
+  }
+
+  const fetchAllConditions = async () => {
+    try {
+      const res = await axios.get('/api/v1/condition-models')
+      setAllConditions(res.data.filter(m => m.nodeUsage === 'CONDITION' || m.nodeUsage === 'BOTH'))
+    } catch (e) {}
+  }
+
   const onCategoryChange = (categoryId) => {
     setSelectedCategoryId(categoryId)
     form.setFieldsValue({ conditionModelId: undefined, field: undefined, dataType: undefined })
     fetchConditionsByCategory(categoryId)
   }
 
-  const onConditionChange = (modelId) => {
+  const onConditionChange = async (modelId) => {
     const model = conditions.find(m => m.id === modelId)
-    if (model && model.dataElementId) {
+    if (node?.type === 'condition' && model && model.dataElementId) {
       form.setFieldsValue({
         field: model.code,
         dataType: model.dataType,
       })
     }
+    if (node?.type === 'result') {
+      try {
+        const res = await axios.get(`/api/v1/result-configs/by-condition/${modelId}`)
+        setResultConfigs(res.data)
+        form.setFieldsValue({ resultConfigId: undefined })
+      } catch (e) {}
+    }
   }
+
+  const buildCascaderOptions = (dataSets) => {
+    const tree = []
+    for (const ds of dataSets) {
+      const l1Key = ds.catL1Code || '未分类'
+      const l1Name = ds.catL1Name || '未分类'
+      const l2Key = ds.catL2Code || '未分类'
+      const l2Name = ds.catL2Name || '未分类'
+      const l3Key = ds.catL3Code || '未分类'
+      const l3Name = ds.catL3Name || '未分类'
+
+      let l1Node = tree.find(n => n.value === l1Key)
+      if (!l1Node) {
+        l1Node = { value: l1Key, label: l1Name, children: [] }
+        tree.push(l1Node)
+      }
+
+      let l2Node = l1Node.children.find(n => n.value === l2Key)
+      if (!l2Node) {
+        l2Node = { value: l2Key, label: l2Name, children: [] }
+        l1Node.children.push(l2Node)
+      }
+
+      let l3Node = l2Node.children.find(n => n.value === l3Key)
+      if (!l3Node) {
+        l3Node = { value: l3Key, label: l3Name, children: [] }
+        l2Node.children.push(l3Node)
+      }
+
+      l3Node.children.push({ value: ds.id, label: ds.name })
+    }
+    return tree
+  }
+
+  const cascaderOptions = useMemo(() => buildCascaderOptions(dataSets), [dataSets])
+
+  const filteredConditions = useMemo(() => {
+    if (!selectedDatasetId) return []
+    const deIds = dataElements.filter(de => de.datasetId === selectedDatasetId).map(de => de.id)
+    return allConditions.filter(cm => deIds.includes(cm.dataElementId))
+  }, [selectedDatasetId, dataElements, allConditions])
 
   const handleSave = () => {
     const values = form.getFieldsValue()
@@ -91,17 +223,19 @@ export default function ConfigPanel({ open, onClose, node, onUpdate }) {
         allDictCode: values.allDictCode,
         dictAttr: values.dictAttr,
         allDictAttr: values.allDictAttr,
-        valueSource: values.valueSource,
+        valueSource: 'ADAPTER',
         conditionModelId: values.conditionModelId,
-        categoryId: values.categoryId,
+        datasetId: Array.isArray(values.datasetId) ? values.datasetId[values.datasetId.length - 1] : values.datasetId,
       }
     } else if (node.type === 'result') {
+      const selectedRc = resultConfigs.find(r => r.id === values.resultConfigId)
       newData.resultConfig = {
-        resultType: values.resultType,
-        resultValue: values.resultValue,
-        priority: values.priority,
-        conditionModelId: values.conditionModelId,
-        categoryId: values.categoryId,
+        resultConfigId: values.resultConfigId,
+        resultType: selectedRc ? selectedRc.resultType : (node.data?.resultConfig?.resultType || 'DEFAULT'),
+        resultValue: selectedRc ? selectedRc.resultName : (node.data?.resultConfig?.resultValue || values.label),
+        priority: selectedRc ? selectedRc.priority : (node.data?.resultConfig?.priority || 0),
+        content: values.content || selectedRc?.content || '',
+        metadata: selectedRc ? selectedRc.metadata : null,
       }
     }
 
@@ -132,23 +266,40 @@ export default function ConfigPanel({ open, onClose, node, onUpdate }) {
 
   const renderConditionForm = () => (
     <>
-      <Form.Item name="categoryId" label="条件分类" rules={[{ required: true, message: '必须选择条件分类' }]}>
-        <Select placeholder="先选择条件分类" onChange={onCategoryChange}>
-          {categories.map(cat => (
-            <Option key={cat.id} value={cat.id}>{cat.name}</Option>
-          ))}
-        </Select>
+      <Form.Item name="datasetId" label="数据集分类" rules={[{ required: true, message: '必须选择数据集分类' }]}>
+        <Cascader
+          options={cascaderOptions}
+          placeholder="选择数据集分类"
+          onChange={(value) => {
+            const dsId = value?.[value.length - 1]
+            setSelectedDatasetId(dsId || null)
+            form.setFieldsValue({ conditionModelId: undefined, field: undefined, dataType: undefined })
+          }}
+        />
       </Form.Item>
-      <Form.Item name="conditionModelId" label="条件" rules={[{ required: true, message: '必须选择条件' }]}>
-        <Select placeholder={selectedCategoryId ? '选择该分类下的条件' : '请先选择分类'} disabled={!selectedCategoryId} onChange={onConditionChange}>
-          {conditions.map(m => (
-            <Option key={m.id} value={m.id}>
-              {m.name}
-              <Tag color={m.nodeUsage === 'CONDITION' ? 'blue' : m.nodeUsage === 'BOTH' ? 'green' : 'orange'} style={{ marginLeft: 8 }}>
-                {m.nodeUsage === 'CONDITION' ? '条件' : m.nodeUsage === 'RESULT' ? '结果' : '通用'}
-              </Tag>
-            </Option>
-          ))}
+      <Form.Item name="conditionModelId" label="数据元/条件" rules={[{ required: true, message: '必须选择数据元' }]}>
+        <Select
+          placeholder={selectedDatasetId ? '选择该数据集下的数据元' : '请先选择数据集分类'}
+          disabled={!selectedDatasetId}
+          onChange={(modelId) => {
+            const model = allConditions.find(m => m.id === modelId)
+            if (model) {
+              form.setFieldsValue({
+                field: model.code,
+                dataType: model.dataType,
+              })
+            }
+          }}
+        >
+          {filteredConditions.map(cm => {
+            const de = dataElements.find(d => d.id === cm.dataElementId)
+            return (
+              <Option key={cm.id} value={cm.id}>
+                {de?.name || cm.name}
+                <Tag color="blue" style={{ marginLeft: 8 }}>{cm.dataType}</Tag>
+              </Option>
+            )
+          })}
         </Select>
       </Form.Item>
       <Form.Item name="field" label="条件字段">
@@ -177,6 +328,7 @@ export default function ConfigPanel({ open, onClose, node, onUpdate }) {
             <Option value="dictMatch">字典匹配</Option>
             <Option value="dataCheck">数据判断</Option>
             <Option value="timeCheck">时间判断</Option>
+            <Option value="fieldCompare">字段比对</Option>
           </OptGroup>
           <OptGroup label="质控计算符">
             <Option value="lengthCheck">长度校验</Option>
@@ -387,60 +539,140 @@ export default function ConfigPanel({ open, onClose, node, onUpdate }) {
             </Select>
           </Form.Item>
         </>
+      ) : selectedOperator === 'fieldCompare' ? (
+        <>
+          <Form.Item name="value" label="字段A" rules={[{ required: true }]}>
+            <Input placeholder="如: admissionTime" />
+          </Form.Item>
+          <Form.Item name="extraValue1" label="字段B" rules={[{ required: true }]}>
+            <Input placeholder="如: historyCollectionTime" />
+          </Form.Item>
+          <Form.Item name="extraValue2" label="比较类型" rules={[{ required: true }]}>
+            <Select placeholder="选择比较类型">
+              <Option value="TIME_DIFF_HOUR">时间差（小时）</Option>
+              <Option value="TIME_DIFF_MINUTE">时间差（分钟）</Option>
+              <Option value="TIME_DIFF_DAY">时间差（天）</Option>
+              <Option value="NUMERIC_DIFF">数值差</Option>
+              <Option value="STRING_EQ">字符串相等</Option>
+            </Select>
+          </Form.Item>
+          <Form.Item name="extraValue3" label="比较符" rules={[{ required: true }]}>
+            <Select placeholder="选择比较符">
+              <Option value="==">等于</Option>
+              <Option value="!=">不等于</Option>
+              <Option value="&gt;">大于</Option>
+              <Option value="&lt;">小于</Option>
+              <Option value="&gt;=">大于等于</Option>
+              <Option value="&lt;=">小于等于</Option>
+            </Select>
+          </Form.Item>
+          <Form.Item name="extraValue4" label="阈值" rules={[{ required: true }]}>
+            <Input placeholder="如: 2" />
+          </Form.Item>
+        </>
       ) : (
         <Form.Item name="value" label="条件值" rules={[{ required: true }]}>
           <Input placeholder="如: 65" />
         </Form.Item>
       )}
-      <Form.Item name="valueSource" label="值来源">
-        <Radio.Group>
-          <Radio value="PARAM">参数</Radio>
-          <Radio value="SQL">SQL查询</Radio>
-          <Radio value="ADAPTER">适配器</Radio>
-        </Radio.Group>
-      </Form.Item>
     </>
   )
 
+  const parseMetadata = (str) => {
+    if (!str) return null
+    try {
+      const meta = JSON.parse(str)
+      if (!meta.hasExtension) return null
+      return meta
+    } catch (e) {
+      return null
+    }
+  }
+
+  const onResultConfigChange = (rcId) => {
+    const rc = resultConfigs.find(r => r.id === rcId)
+    setSelectedRcDetail(rc || null)
+    if (rc?.content) {
+      form.setFieldsValue({ content: rc.content })
+    }
+  }
+
+  const renderRcDetailCard = () => {
+    if (!selectedRcDetail) return null
+    const meta = parseMetadata(selectedRcDetail.metadata)
+    const dict = meta ? dictionaries.find(d => d.code === meta.dictCode) : null
+    return (
+      <div style={{
+        background: '#f6ffed',
+        border: '1px solid #b7eb8f',
+        borderRadius: 4,
+        padding: 12,
+        marginBottom: 16,
+        marginTop: -8
+      }}>
+        <div style={{ fontWeight: 'bold', color: '#52c41a', marginBottom: 8, fontSize: 13 }}>
+          结果配置详情
+        </div>
+        <div style={{ fontSize: 12, marginBottom: 4 }}>
+          <Tag color="blue">{selectedRcDetail.resultType}</Tag>
+          <span style={{ marginLeft: 8 }}>{selectedRcDetail.resultName}</span>
+          <span style={{ color: '#999', marginLeft: 8 }}>优先级:{selectedRcDetail.priority}</span>
+        </div>
+        {meta && meta.items && meta.items.length > 0 && (
+          <>
+            <div style={{ marginTop: 8, borderTop: '1px dashed #b7eb8f', paddingTop: 8 }}>
+              <div style={{ color: '#666', fontSize: 12, marginBottom: 4 }}>
+                扩展属性 — {dict?.name || meta.dictCode} ({meta.items.length}项):
+              </div>
+              <div>
+                {meta.items.map((item, idx) => (
+                  <Tag key={idx} color="green" style={{ marginBottom: 4, fontSize: 11 }}>
+                    {item.code} - {item.name}
+                  </Tag>
+                ))}
+              </div>
+            </div>
+          </>
+        )}
+      </div>
+    )
+  }
+
   const renderResultForm = () => (
     <>
-      <Form.Item name="categoryId" label="条件分类" rules={[{ required: true, message: '必须选择条件分类' }]}>
-        <Select placeholder="先选择条件分类" onChange={onCategoryChange}>
-          {categories.map(cat => (
-            <Option key={cat.id} value={cat.id}>{cat.name}</Option>
-          ))}
+      <Form.Item name="resultConfigId" label="结果配置" rules={[{ required: true, message: '必须选择结果配置' }]}>
+        <Select
+          showSearch
+          placeholder="搜索或选择结果配置"
+          optionFilterProp="label"
+          onChange={onResultConfigChange}
+        >
+          {resultConfigs.map(rc => {
+            const meta = parseMetadata(rc.metadata)
+            return (
+              <Option key={rc.id} value={rc.id} label={`${rc.resultType} - ${rc.resultName}`}>
+                <Tag color="blue" style={{ marginRight: 8 }}>{rc.resultType}</Tag>
+                {rc.resultName}
+                <span style={{ color: '#999', marginLeft: 8 }}>(优先级:{rc.priority})</span>
+                {meta && meta.items && meta.items.length > 0 && (
+                  <Tag color="green" style={{ marginLeft: 8, fontSize: 11 }}>
+                    扩展{meta.items.length}项
+                  </Tag>
+                )}
+              </Option>
+            )
+          })}
         </Select>
       </Form.Item>
-      <Form.Item name="conditionModelId" label="结果条件" rules={[{ required: true, message: '必须选择结果条件' }]}>
-        <Select placeholder={selectedCategoryId ? '选择该分类下的结果条件' : '请先选择分类'} disabled={!selectedCategoryId}>
-          {conditions.map(m => (
-            <Option key={m.id} value={m.id}>
-              {m.name}
-              <Tag color={m.nodeUsage === 'RESULT' ? 'orange' : m.nodeUsage === 'BOTH' ? 'green' : 'blue'} style={{ marginLeft: 8 }}>
-                {m.nodeUsage === 'CONDITION' ? '条件' : m.nodeUsage === 'RESULT' ? '结果' : '通用'}
-              </Tag>
-            </Option>
-          ))}
-        </Select>
+
+      {renderRcDetailCard()}
+
+      <Form.Item name="content" label="结果内容">
+        <Input.TextArea placeholder="输入需要返回的结果信息。选择结果配置后将自动填入默认值" rows={3} />
       </Form.Item>
-      <Form.Item name="resultType" label="结果类型" rules={[{ required: true }]}>
-        <Select placeholder="选择结果类型">
-          <Option value="FORBIDDEN">绝对禁忌</Option>
-          <Option value="WARNING">相对禁忌</Option>
-          <Option value="ALERT">预警提醒</Option>
-          <Option value="MESSAGE">消息提醒</Option>
-          <Option value="DRUG_FORBIDDEN">禁用</Option>
-          <Option value="DRUG_CAUTION">慎用</Option>
-          <Option value="NURSING_LEVEL_1">特级护理</Option>
-          <Option value="NURSING_LEVEL_2">一级护理</Option>
-        </Select>
-      </Form.Item>
-      <Form.Item name="resultValue" label="结果值" rules={[{ required: true }]}>
-        <Input placeholder="结果描述" />
-      </Form.Item>
-      <Form.Item name="priority" label="优先级">
-        <Input type="number" placeholder="0-100" />
-      </Form.Item>
+      <div style={{ color: '#888', fontSize: 13, marginBottom: 16 }}>
+        提示：请前往系统菜单的"结果管理"中预先配置结果属性。
+      </div>
     </>
   )
 
