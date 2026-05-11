@@ -1,0 +1,61 @@
+
+  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+  '  |____| .__|_| |_|_| |_\__, | / / / /
+ =========|_|==============|___/=/_/_/_/
+ :: Spring Boot ::               (v2.7.18)
+
+2026-05-11 17:41:29.550  INFO 90090 --- [           main] com.ruleengine.RuleEngineApplication     : Starting RuleEngineApplication using Java 1.8.0_452 on qiuqiudeMacBook-Air-7.local with PID 90090 (/Users/qiuqiu/Documents/QIUBIN/project/rule-engine/rule-engine-server/target/classes started by qiuqiu in /Users/qiuqiu/Documents/QIUBIN/project/rule-engine/rule-engine-server)
+2026-05-11 17:41:29.551 DEBUG 90090 --- [           main] com.ruleengine.RuleEngineApplication     : Running with Spring Boot v2.7.18, Spring v5.3.31
+2026-05-11 17:41:29.551  INFO 90090 --- [           main] com.ruleengine.RuleEngineApplication     : No active profile set, falling back to 1 default profile: "default"
+2026-05-11 17:41:29.845  INFO 90090 --- [           main] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data JPA repositories in DEFAULT mode.
+2026-05-11 17:41:29.870  INFO 90090 --- [           main] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 22 ms. Found 11 JPA repository interfaces.
+2026-05-11 17:41:30.041  INFO 90090 --- [           main] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat initialized with port(s): 8081 (http)
+2026-05-11 17:41:30.045  INFO 90090 --- [           main] o.apache.catalina.core.StandardService   : Starting service [Tomcat]
+2026-05-11 17:41:30.045  INFO 90090 --- [           main] org.apache.catalina.core.StandardEngine  : Starting Servlet engine: [Apache Tomcat/9.0.83]
+2026-05-11 17:41:30.082  INFO 90090 --- [           main] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring embedded WebApplicationContext
+2026-05-11 17:41:30.082  INFO 90090 --- [           main] w.s.c.ServletWebServerApplicationContext : Root WebApplicationContext: initialization completed in 515 ms
+2026-05-11 17:41:30.181  INFO 90090 --- [           main] o.hibernate.jpa.internal.util.LogHelper  : HHH000204: Processing PersistenceUnitInfo [name: default]
+2026-05-11 17:41:30.197  INFO 90090 --- [           main] org.hibernate.Version                    : HHH000412: Hibernate ORM core version 5.6.15.Final
+2026-05-11 17:41:30.269  INFO 90090 --- [           main] o.hibernate.annotations.common.Version   : HCANN000001: Hibernate Commons Annotations {5.1.2.Final}
+2026-05-11 17:41:30.296  INFO 90090 --- [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Starting...
+2026-05-11 17:41:30.359  INFO 90090 --- [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Start completed.
+2026-05-11 17:41:30.364  INFO 90090 --- [           main] org.hibernate.dialect.Dialect            : HHH000400: Using dialect: org.hibernate.dialect.MySQL8Dialect
+2026-05-11 17:41:30.707  INFO 90090 --- [           main] o.h.e.t.j.p.i.JtaPlatformInitiator       : HHH000490: Using JtaPlatform implementation: [org.hibernate.engine.transaction.jta.platform.internal.NoJtaPlatform]
+2026-05-11 17:41:30.711  INFO 90090 --- [           main] j.LocalContainerEntityManagerFactoryBean : Initialized JPA EntityManagerFactory for persistence unit 'default'
+2026-05-11 17:41:31.015  INFO 90090 --- [           main] com.ruleengine.drools.adapter.HisClient  : HIS 客户端未启用，规则执行将仅依赖传入参数
+2026-05-11 17:41:31.015  INFO 90090 --- [           main] com.ruleengine.nlp.NlpService            : HanLP 自定义词典目录存在，医学 NLP 服务已就绪
+2026-05-11 17:41:31.129  WARN 90090 --- [           main] o.d.c.kie.builder.impl.KieProject        : No files found for KieBase defaultKieBase
+2026-05-11 17:41:31.155  WARN 90090 --- [           main] JpaBaseConfiguration$JpaWebConfiguration : spring.jpa.open-in-view is enabled by default. Therefore, database queries may be performed during view rendering. Explicitly configure spring.jpa.open-in-view to disable this warning
+2026-05-11 17:41:31.258  INFO 90090 --- [           main] o.s.b.a.e.web.EndpointLinksResolver      : Exposing 3 endpoint(s) beneath base path '/actuator'
+2026-05-11 17:41:31.271  WARN 90090 --- [           main] ConfigServletWebServerApplicationContext : Exception encountered during context initialization - cancelling refresh attempt: org.springframework.context.ApplicationContextException: Failed to start bean 'webServerStartStop'; nested exception is org.springframework.boot.web.server.PortInUseException: Port 8081 is already in use
+2026-05-11 17:41:31.274  INFO 90090 --- [           main] j.LocalContainerEntityManagerFactoryBean : Closing JPA EntityManagerFactory for persistence unit 'default'
+2026-05-11 17:41:31.275  INFO 90090 --- [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Shutdown initiated...
+2026-05-11 17:41:31.277  INFO 90090 --- [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Shutdown completed.
+2026-05-11 17:41:31.277  INFO 90090 --- [           main] o.apache.catalina.core.StandardService   : Stopping service [Tomcat]
+2026-05-11 17:41:31.284  INFO 90090 --- [           main] ConditionEvaluationReportLoggingListener : 
+
+Error starting ApplicationContext. To display the conditions report re-run your application with 'debug' enabled.
+2026-05-11 17:41:31.289 ERROR 90090 --- [           main] o.s.b.d.LoggingFailureAnalysisReporter   : 
+
+***************************
+APPLICATION FAILED TO START
+***************************
+
+Description:
+
+Web server failed to start. Port 8081 was already in use.
+
+Action:
+
+Identify and stop the process that's listening on port 8081 or configure this application to listen on another port.
+
+[[1;31mERROR[m] Failed to execute goal [32morg.springframework.boot:spring-boot-maven-plugin:2.7.18:run[m [1m(default-cli)[m on project [36mrule-engine-server[m: [1;31mApplication finished with exit code: 1[m -> [1m[Help 1][m
+[[1;31mERROR[m] 
+[[1;31mERROR[m] To see the full stack trace of the errors, re-run Maven with the [1m-e[m switch.
+[[1;31mERROR[m] Re-run Maven using the [1m-X[m switch to enable full debug logging.
+[[1;31mERROR[m] 
+[[1;31mERROR[m] For more information about the errors and possible solutions, please read the following articles:
+[[1;31mERROR[m] [1m[Help 1][m http://cwiki.apache.org/confluence/display/MAVEN/MojoExecutionException

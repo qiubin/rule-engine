@@ -1,0 +1,85 @@
+
+> rule-engine-ui@1.0.0 dev
+> vite
+
+
+  VITE v5.4.21  ready in 155 ms
+
+  ➜  Local:   http://localhost:3000/
+  ➜  Network: use --host to expose
+5:15:25 PM [vite] Pre-transform error: /Users/qiuqiu/Documents/QIUBIN/project/rule-engine/rule-engine-ui/src/components/ConfigPanel/index.jsx: Unexpected token (562:32)
+
+  560 |             <Select placeholder="选择比较符">
+  561 |               <Option value="==">等于</Option>
+> 562 |               <Option value="!="">不等于</Option>
+      |                                 ^
+  563 |               <Option value="&gt;">大于</Option>
+  564 |               <Option value="&lt;">小于</Option>
+  565 |               <Option value="&gt;=">大于等于</Option>
+5:15:37 PM [vite] Internal server error: /Users/qiuqiu/Documents/QIUBIN/project/rule-engine/rule-engine-ui/src/components/ConfigPanel/index.jsx: Unexpected token (562:32)
+
+  560 |             <Select placeholder="选择比较符">
+  561 |               <Option value="==">等于</Option>
+> 562 |               <Option value="!="">不等于</Option>
+      |                                 ^
+  563 |               <Option value="&gt;">大于</Option>
+  564 |               <Option value="&lt;">小于</Option>
+  565 |               <Option value="&gt;=">大于等于</Option>
+  Plugin: vite:react-babel
+  File: /Users/qiuqiu/Documents/QIUBIN/project/rule-engine/rule-engine-ui/src/components/ConfigPanel/index.jsx:562:32
+  560|              <Select placeholder="选择比较符">
+  561|                <Option value="==">等于</Option>
+  562|                <Option value="!="">不等于</Option>
+     |                                  ^
+  563|                <Option value="&gt;">大于</Option>
+  564|                <Option value="&lt;">小于</Option>
+      at constructor (/Users/qiuqiu/Documents/QIUBIN/project/rule-engine/rule-engine-ui/node_modules/@babel/parser/lib/index.js:365:19)
+      at JSXParserMixin.raise (/Users/qiuqiu/Documents/QIUBIN/project/rule-engine/rule-engine-ui/node_modules/@babel/parser/lib/index.js:6599:19)
+      at JSXParserMixin.unexpected (/Users/qiuqiu/Documents/QIUBIN/project/rule-engine/rule-engine-ui/node_modules/@babel/parser/lib/index.js:6619:16)
+      at JSXParserMixin.jsxParseIdentifier (/Users/qiuqiu/Documents/QIUBIN/project/rule-engine/rule-engine-ui/node_modules/@babel/parser/lib/index.js:4569:12)
+      at JSXParserMixin.jsxParseNamespacedName (/Users/qiuqiu/Documents/QIUBIN/project/rule-engine/rule-engine-ui/node_modules/@babel/parser/lib/index.js:4576:23)
+      at JSXParserMixin.jsxParseAttribute (/Users/qiuqiu/Documents/QIUBIN/project/rule-engine/rule-engine-ui/node_modules/@babel/parser/lib/index.js:4652:22)
+      at JSXParserMixin.jsxParseOpeningElementAfterName (/Users/qiuqiu/Documents/QIUBIN/project/rule-engine/rule-engine-ui/node_modules/@babel/parser/lib/index.js:4667:28)
+      at JSXParserMixin.jsxParseOpeningElementAt (/Users/qiuqiu/Documents/QIUBIN/project/rule-engine/rule-engine-ui/node_modules/@babel/parser/lib/index.js:4662:17)
+      at JSXParserMixin.jsxParseElementAt (/Users/qiuqiu/Documents/QIUBIN/project/rule-engine/rule-engine-ui/node_modules/@babel/parser/lib/index.js:4686:33)
+      at JSXParserMixin.jsxParseElementAt (/Users/qiuqiu/Documents/QIUBIN/project/rule-engine/rule-engine-ui/node_modules/@babel/parser/lib/index.js:4698:32)
+      at JSXParserMixin.jsxParseElementAt (/Users/qiuqiu/Documents/QIUBIN/project/rule-engine/rule-engine-ui/node_modules/@babel/parser/lib/index.js:4698:32)
+      at JSXParserMixin.jsxParseElementAt (/Users/qiuqiu/Documents/QIUBIN/project/rule-engine/rule-engine-ui/node_modules/@babel/parser/lib/index.js:4698:32)
+      at JSXParserMixin.jsxParseElement (/Users/qiuqiu/Documents/QIUBIN/project/rule-engine/rule-engine-ui/node_modules/@babel/parser/lib/index.js:4749:17)
+      at JSXParserMixin.parseExprAtom (/Users/qiuqiu/Documents/QIUBIN/project/rule-engine/rule-engine-ui/node_modules/@babel/parser/lib/index.js:4759:19)
+      at JSXParserMixin.parseExprSubscripts (/Users/qiuqiu/Documents/QIUBIN/project/rule-engine/rule-engine-ui/node_modules/@babel/parser/lib/index.js:11081:23)
+      at JSXParserMixin.parseUpdate (/Users/qiuqiu/Documents/QIUBIN/project/rule-engine/rule-engine-ui/node_modules/@babel/parser/lib/index.js:11066:21)
+      at JSXParserMixin.parseMaybeUnary (/Users/qiuqiu/Documents/QIUBIN/project/rule-engine/rule-engine-ui/node_modules/@babel/parser/lib/index.js:11046:23)
+      at JSXParserMixin.parseMaybeUnaryOrPrivate (/Users/qiuqiu/Documents/QIUBIN/project/rule-engine/rule-engine-ui/node_modules/@babel/parser/lib/index.js:10899:61)
+      at JSXParserMixin.parseExprOps (/Users/qiuqiu/Documents/QIUBIN/project/rule-engine/rule-engine-ui/node_modules/@babel/parser/lib/index.js:10904:23)
+      at JSXParserMixin.parseMaybeConditional (/Users/qiuqiu/Documents/QIUBIN/project/rule-engine/rule-engine-ui/node_modules/@babel/parser/lib/index.js:10881:23)
+      at JSXParserMixin.parseMaybeAssign (/Users/qiuqiu/Documents/QIUBIN/project/rule-engine/rule-engine-ui/node_modules/@babel/parser/lib/index.js:10831:21)
+      at /Users/qiuqiu/Documents/QIUBIN/project/rule-engine/rule-engine-ui/node_modules/@babel/parser/lib/index.js:10800:39
+      at JSXParserMixin.allowInAnd (/Users/qiuqiu/Documents/QIUBIN/project/rule-engine/rule-engine-ui/node_modules/@babel/parser/lib/index.js:12426:12)
+      at JSXParserMixin.parseMaybeAssignAllowIn (/Users/qiuqiu/Documents/QIUBIN/project/rule-engine/rule-engine-ui/node_modules/@babel/parser/lib/index.js:10800:17)
+      at JSXParserMixin.parseMaybeAssignAllowInOrVoidPattern (/Users/qiuqiu/Documents/QIUBIN/project/rule-engine/rule-engine-ui/node_modules/@babel/parser/lib/index.js:12493:17)
+      at JSXParserMixin.parseParenAndDistinguishExpression (/Users/qiuqiu/Documents/QIUBIN/project/rule-engine/rule-engine-ui/node_modules/@babel/parser/lib/index.js:11675:28)
+      at JSXParserMixin.parseExprAtom (/Users/qiuqiu/Documents/QIUBIN/project/rule-engine/rule-engine-ui/node_modules/@babel/parser/lib/index.js:11331:23)
+      at JSXParserMixin.parseExprAtom (/Users/qiuqiu/Documents/QIUBIN/project/rule-engine/rule-engine-ui/node_modules/@babel/parser/lib/index.js:4764:20)
+      at JSXParserMixin.parseExprSubscripts (/Users/qiuqiu/Documents/QIUBIN/project/rule-engine/rule-engine-ui/node_modules/@babel/parser/lib/index.js:11081:23)
+      at JSXParserMixin.parseUpdate (/Users/qiuqiu/Documents/QIUBIN/project/rule-engine/rule-engine-ui/node_modules/@babel/parser/lib/index.js:11066:21)
+      at JSXParserMixin.parseMaybeUnary (/Users/qiuqiu/Documents/QIUBIN/project/rule-engine/rule-engine-ui/node_modules/@babel/parser/lib/index.js:11046:23)
+      at JSXParserMixin.parseMaybeUnaryOrPrivate (/Users/qiuqiu/Documents/QIUBIN/project/rule-engine/rule-engine-ui/node_modules/@babel/parser/lib/index.js:10899:61)
+      at JSXParserMixin.parseExprOps (/Users/qiuqiu/Documents/QIUBIN/project/rule-engine/rule-engine-ui/node_modules/@babel/parser/lib/index.js:10904:23)
+      at JSXParserMixin.parseMaybeConditional (/Users/qiuqiu/Documents/QIUBIN/project/rule-engine/rule-engine-ui/node_modules/@babel/parser/lib/index.js:10881:23)
+      at JSXParserMixin.parseMaybeAssign (/Users/qiuqiu/Documents/QIUBIN/project/rule-engine/rule-engine-ui/node_modules/@babel/parser/lib/index.js:10831:21)
+      at /Users/qiuqiu/Documents/QIUBIN/project/rule-engine/rule-engine-ui/node_modules/@babel/parser/lib/index.js:10800:39
+      at JSXParserMixin.allowInAnd (/Users/qiuqiu/Documents/QIUBIN/project/rule-engine/rule-engine-ui/node_modules/@babel/parser/lib/index.js:12426:12)
+      at JSXParserMixin.parseMaybeAssignAllowIn (/Users/qiuqiu/Documents/QIUBIN/project/rule-engine/rule-engine-ui/node_modules/@babel/parser/lib/index.js:10800:17)
+      at JSXParserMixin.parseConditional (/Users/qiuqiu/Documents/QIUBIN/project/rule-engine/rule-engine-ui/node_modules/@babel/parser/lib/index.js:10891:30)
+      at JSXParserMixin.parseMaybeConditional (/Users/qiuqiu/Documents/QIUBIN/project/rule-engine/rule-engine-ui/node_modules/@babel/parser/lib/index.js:10885:17)
+      at JSXParserMixin.parseMaybeAssign (/Users/qiuqiu/Documents/QIUBIN/project/rule-engine/rule-engine-ui/node_modules/@babel/parser/lib/index.js:10831:21)
+      at JSXParserMixin.parseConditional (/Users/qiuqiu/Documents/QIUBIN/project/rule-engine/rule-engine-ui/node_modules/@babel/parser/lib/index.js:10893:29)
+      at JSXParserMixin.parseMaybeConditional (/Users/qiuqiu/Documents/QIUBIN/project/rule-engine/rule-engine-ui/node_modules/@babel/parser/lib/index.js:10885:17)
+      at JSXParserMixin.parseMaybeAssign (/Users/qiuqiu/Documents/QIUBIN/project/rule-engine/rule-engine-ui/node_modules/@babel/parser/lib/index.js:10831:21)
+      at JSXParserMixin.parseConditional (/Users/qiuqiu/Documents/QIUBIN/project/rule-engine/rule-engine-ui/node_modules/@babel/parser/lib/index.js:10893:29)
+      at JSXParserMixin.parseMaybeConditional (/Users/qiuqiu/Documents/QIUBIN/project/rule-engine/rule-engine-ui/node_modules/@babel/parser/lib/index.js:10885:17)
+      at JSXParserMixin.parseMaybeAssign (/Users/qiuqiu/Documents/QIUBIN/project/rule-engine/rule-engine-ui/node_modules/@babel/parser/lib/index.js:10831:21)
+      at JSXParserMixin.parseConditional (/Users/qiuqiu/Documents/QIUBIN/project/rule-engine/rule-engine-ui/node_modules/@babel/parser/lib/index.js:10893:29)
+      at JSXParserMixin.parseMaybeConditional (/Users/qiuqiu/Documents/QIUBIN/project/rule-engine/rule-engine-ui/node_modules/@babel/parser/lib/index.js:10885:17)
+      at JSXParserMixin.parseMaybeAssign (/Users/qiuqiu/Documents/QIUBIN/project/rule-engine/rule-engine-ui/node_modules/@babel/parser/lib/index.js:10831:21)
