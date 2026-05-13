@@ -65,6 +65,10 @@ public class DrlCompiler {
                 String nodeId = node.get("id").asText();
                 String separator = "and".equals(type) ? " && " : " || ";
                 String combined = combineUpstreamConditions(nodeId, nodeMap, reverseAdjacency, separator, new HashSet<>());
+                // OR 节点条件需要加括号，避免与下游 && 产生优先级错误（A || B && C 会被解析为 A || (B && C)）
+                if ("or".equals(type) && !combined.isEmpty()) {
+                    combined = "(" + combined + ")";
+                }
                 gateConditions.put(nodeId, combined);
             }
         }

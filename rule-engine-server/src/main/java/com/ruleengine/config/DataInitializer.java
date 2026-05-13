@@ -450,6 +450,18 @@ public class DataInitializer implements CommandLineRunner {
         saveDataElement("MEDICAL_HISTORY_TIME", "病史采集时间", DataType.STRING, null, "病史采集时间，格式 yyyy-MM-dd HH:mm:ss", datasetId, "medicalHistoryTime");
         saveDataElement("PULSE", "脉搏", DataType.NUMERIC, null, "脉搏次数/分", datasetId, "pulse");
         saveDataElement("HEART_RATE", "心率", DataType.NUMERIC, null, "心率次数/分", datasetId, "heartRate");
+
+        // 手术风险规则专用数据元
+        saveDataElement("SURGERY_ORDER", "手术医嘱", DataType.STRING, null, "手术医嘱内容，用于匹配手术名称", datasetId, "surgeryOrder");
+        saveDataElement("LAB_LVEF", "左室射血分数(LVEF)", DataType.NUMERIC, null, "心脏彩超LVEF值，单位%", datasetId, "lvefValue");
+        saveDataElement("LAB_PT", "凝血酶原时间(PT)", DataType.NUMERIC, null, "凝血功能PT值，单位秒", datasetId, "ptValue");
+        saveDataElement("LAB_APTT", "活化部分凝血活酶时间(APTT)", DataType.NUMERIC, null, "凝血功能APTT值，单位秒", datasetId, "apttValue");
+        saveDataElement("LAB_PLATELET", "血小板计数", DataType.NUMERIC, null, "血常规血小板计数，单位×10^9/L", datasetId, "plateletCount");
+        saveDataElement("LAB_BUN", "血尿素氮(BUN)", DataType.NUMERIC, null, "肾功能BUN值，单位mmol/L", datasetId, "bunValue");
+        saveDataElement("LAB_CREA", "血肌酐(Cr)", DataType.NUMERIC, null, "肾功能肌酐值，单位μmol/L", datasetId, "creatinineValue");
+        saveDataElement("LAB_GFR", "肾小球滤过率(GFR)", DataType.NUMERIC, null, "肾功能GFR值，单位ml/min/1.73m²", datasetId, "gfrValue");
+        saveDataElement("ECOG_SCORE", "ECOG评分", DataType.NUMERIC, null, "ECOG体力状态评分，0-5分", datasetId, "ecogScore");
+        saveDataElement("PREGNANCY_STATUS", "妊娠状态", DataType.STRING, null, "妊娠状态描述", datasetId, "pregnancyStatus");
     }
 
     private void saveDataElement(String code, String name, DataType dataType, String dictCode, String description, Long datasetId) {
@@ -478,6 +490,7 @@ public class DataInitializer implements CommandLineRunner {
         saveRuleType("MEDICARE_AUDIT", "医保稽核", "医保审核规则", 3);
         saveRuleType("NURSING_DECISION", "护理决策", "护理计划与评估规则", 4);
         saveRuleType("VTE_PREVENTION", "VTE防治", "静脉血栓栓塞防治规则", 5);
+        saveRuleType("SURGERY_RISK", "手术高风险", "手术高风险规则（禁忌/预警）", 6);
     }
 
     private void saveRuleType(String code, String name, String description, int sortOrder) {
@@ -499,6 +512,9 @@ public class DataInitializer implements CommandLineRunner {
         saveCategoryIfNotExists("MEDICAL_RECORD", "病历文书", "病历文书相关", 4);
         saveCategoryIfNotExists("VITAL_SIGNS", "生命体征", "生命体征相关", 5);
         saveCategoryIfNotExists("RESULT_CONDITION", "结果条件", "规则执行结果相关条件", 6);
+        saveCategoryIfNotExists("LAB_RESULT", "检验结果", "检验检查结果相关", 7);
+        saveCategoryIfNotExists("ASSESSMENT", "评估量表", "患者评估量表相关", 8);
+        saveCategoryIfNotExists("SURGERY", "手术信息", "手术医嘱及相关", 9);
     }
 
     private void saveCategoryIfNotExists(String code, String name, String description, int sort) {
@@ -557,6 +573,8 @@ public class DataInitializer implements CommandLineRunner {
 
         // 适配器字段条件模型（病历文书相关）
         initAdapterConditionModels(emrCat, vitalCat, patientCat);
+        // 手术风险规则专用条件模型
+        initSurgeryRiskConditionModels();
     }
 
     private void initAdapterConditionModels(ConditionModelCategory emrCat, ConditionModelCategory vitalCat, ConditionModelCategory patientCat) {
@@ -607,6 +625,61 @@ public class DataInitializer implements CommandLineRunner {
                 Arrays.asList("fieldCompare", "dataCheck"), ValueSource.ADAPTER, NodeUsage.CONDITION);
         if (heartRate != null) saveConditionModel(heartRate.getId(), vitalCat != null ? vitalCat.getId() : null,
                 Arrays.asList("fieldCompare", "dataCheck"), ValueSource.ADAPTER, NodeUsage.CONDITION);
+    }
+
+    private void initSurgeryRiskConditionModels() {
+        ConditionModelCategory surgeryCat = categoryRepository.findByCode("SURGERY").orElse(null);
+        ConditionModelCategory labCat = categoryRepository.findByCode("LAB_RESULT").orElse(null);
+        ConditionModelCategory assessmentCat = categoryRepository.findByCode("ASSESSMENT").orElse(null);
+        ConditionModelCategory diagnosisCat = categoryRepository.findByCode("DIAGNOSIS").orElse(null);
+        ConditionModelCategory patientCat = categoryRepository.findByCode("PATIENT_INFO").orElse(null);
+
+        DataElement surgeryOrder = findDe("SURGERY_ORDER");
+        DataElement lvef = findDe("LAB_LVEF");
+        DataElement pt = findDe("LAB_PT");
+        DataElement aptt = findDe("LAB_APTT");
+        DataElement platelet = findDe("LAB_PLATELET");
+        DataElement bun = findDe("LAB_BUN");
+        DataElement crea = findDe("LAB_CREA");
+        DataElement gfr = findDe("LAB_GFR");
+        DataElement ecog = findDe("ECOG_SCORE");
+        DataElement pregnancy = findDe("PREGNANCY_STATUS");
+        DataElement diagnosis = findDe("DIAGNOSIS");
+        DataElement emr = findDe("EMR_CONTENT");
+        DataElement age = findDe("PATIENT_AGE");
+        DataElement gender = findDe("PATIENT_GENDER");
+
+        // 手术医嘱：contains匹配（手术名称）
+        if (surgeryOrder != null) saveConditionModel(surgeryOrder.getId(), surgeryCat != null ? surgeryCat.getId() : null,
+                Arrays.asList("contains", "=="), ValueSource.ADAPTER, NodeUsage.CONDITION);
+        // 检验细项：数值比较
+        if (lvef != null) saveConditionModel(lvef.getId(), labCat != null ? labCat.getId() : null,
+                Arrays.asList(">", "<", ">=", "<=", "=="), ValueSource.ADAPTER, NodeUsage.CONDITION);
+        if (pt != null) saveConditionModel(pt.getId(), labCat != null ? labCat.getId() : null,
+                Arrays.asList(">", "<", ">=", "<=", "=="), ValueSource.ADAPTER, NodeUsage.CONDITION);
+        if (aptt != null) saveConditionModel(aptt.getId(), labCat != null ? labCat.getId() : null,
+                Arrays.asList(">", "<", ">=", "<=", "=="), ValueSource.ADAPTER, NodeUsage.CONDITION);
+        if (platelet != null) saveConditionModel(platelet.getId(), labCat != null ? labCat.getId() : null,
+                Arrays.asList(">", "<", ">=", "<=", "=="), ValueSource.ADAPTER, NodeUsage.CONDITION);
+        if (bun != null) saveConditionModel(bun.getId(), labCat != null ? labCat.getId() : null,
+                Arrays.asList(">", "<", ">=", "<=", "=="), ValueSource.ADAPTER, NodeUsage.CONDITION);
+        if (crea != null) saveConditionModel(crea.getId(), labCat != null ? labCat.getId() : null,
+                Arrays.asList(">", "<", ">=", "<=", "=="), ValueSource.ADAPTER, NodeUsage.CONDITION);
+        if (gfr != null) saveConditionModel(gfr.getId(), labCat != null ? labCat.getId() : null,
+                Arrays.asList(">", "<", ">=", "<=", "=="), ValueSource.ADAPTER, NodeUsage.CONDITION);
+        // 评估量表
+        if (ecog != null) saveConditionModel(ecog.getId(), assessmentCat != null ? assessmentCat.getId() : null,
+                Arrays.asList(">", "<", ">=", "<=", "=="), ValueSource.ADAPTER, NodeUsage.CONDITION);
+        // 妊娠状态
+        if (pregnancy != null) saveConditionModel(pregnancy.getId(), patientCat != null ? patientCat.getId() : null,
+                Arrays.asList("contains", "=="), ValueSource.ADAPTER, NodeUsage.CONDITION);
+        // 诊断：已有的diagnosis适配器字段，补充手术风险相关操作符
+        if (diagnosis != null) saveConditionModel(diagnosis.getId(), diagnosisCat != null ? diagnosisCat.getId() : null,
+                Arrays.asList("regex_match", "dictMatch", "isBlank", "contains"), ValueSource.ADAPTER, NodeUsage.CONDITION);
+        // 病历文书：contains匹配（诊断描述等）
+        if (emr != null) {
+            // EMR_CONTENT 已在上面创建，这里不重复
+        }
     }
 
     private void fixConditionModelCategories() {
