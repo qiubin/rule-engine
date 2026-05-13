@@ -1,12 +1,13 @@
 package com.ruleengine.domain;
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.ruleengine.domain.enums.DataType;
 import com.ruleengine.domain.enums.NodeUsage;
 import com.ruleengine.domain.enums.ValueSource;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.BatchSize;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
@@ -36,6 +37,7 @@ public class ConditionModel {
     private DataType dataType;
 
     @ElementCollection
+    @BatchSize(size = 50)
     @CollectionTable(name = "condition_model_operators", joinColumns = @JoinColumn(name = "condition_model_id"))
     @Column(name = "operator")
     private List<String> operators;
@@ -56,7 +58,7 @@ public class ConditionModel {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "category_id", insertable = false, updatable = false)
-    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler", "conditionModels"})
+    @JsonIgnore
     private ConditionModelCategory category;
 
     @Column(name = "node_usage", length = 16)
@@ -64,7 +66,7 @@ public class ConditionModel {
     private NodeUsage nodeUsage = NodeUsage.BOTH;
 
     @OneToMany(mappedBy = "conditionModel", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler", "conditionModel"})
+    @JsonIgnore
     private List<ResultConfig> resultConfigs;
 
     @CreationTimestamp

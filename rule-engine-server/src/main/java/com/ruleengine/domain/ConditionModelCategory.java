@@ -1,6 +1,6 @@
 package com.ruleengine.domain;
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.ruleengine.domain.enums.CommonStatus;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -44,7 +44,7 @@ public class ConditionModelCategory {
     private CommonStatus status = CommonStatus.ENABLED;
 
     @OneToMany(mappedBy = "category", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler", "category"})
+    @JsonIgnore
     private List<ConditionModel> conditionModels = new ArrayList<>();
 
     @CreationTimestamp

@@ -7,55 +7,1187 @@
  =========|_|==============|___/=/_/_/_/
  :: Spring Boot ::               (v2.7.18)
 
-2026-05-11 17:41:29.550  INFO 90090 --- [           main] com.ruleengine.RuleEngineApplication     : Starting RuleEngineApplication using Java 1.8.0_452 on qiuqiudeMacBook-Air-7.local with PID 90090 (/Users/qiuqiu/Documents/QIUBIN/project/rule-engine/rule-engine-server/target/classes started by qiuqiu in /Users/qiuqiu/Documents/QIUBIN/project/rule-engine/rule-engine-server)
-2026-05-11 17:41:29.551 DEBUG 90090 --- [           main] com.ruleengine.RuleEngineApplication     : Running with Spring Boot v2.7.18, Spring v5.3.31
-2026-05-11 17:41:29.551  INFO 90090 --- [           main] com.ruleengine.RuleEngineApplication     : No active profile set, falling back to 1 default profile: "default"
-2026-05-11 17:41:29.845  INFO 90090 --- [           main] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data JPA repositories in DEFAULT mode.
-2026-05-11 17:41:29.870  INFO 90090 --- [           main] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 22 ms. Found 11 JPA repository interfaces.
-2026-05-11 17:41:30.041  INFO 90090 --- [           main] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat initialized with port(s): 8081 (http)
-2026-05-11 17:41:30.045  INFO 90090 --- [           main] o.apache.catalina.core.StandardService   : Starting service [Tomcat]
-2026-05-11 17:41:30.045  INFO 90090 --- [           main] org.apache.catalina.core.StandardEngine  : Starting Servlet engine: [Apache Tomcat/9.0.83]
-2026-05-11 17:41:30.082  INFO 90090 --- [           main] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring embedded WebApplicationContext
-2026-05-11 17:41:30.082  INFO 90090 --- [           main] w.s.c.ServletWebServerApplicationContext : Root WebApplicationContext: initialization completed in 515 ms
-2026-05-11 17:41:30.181  INFO 90090 --- [           main] o.hibernate.jpa.internal.util.LogHelper  : HHH000204: Processing PersistenceUnitInfo [name: default]
-2026-05-11 17:41:30.197  INFO 90090 --- [           main] org.hibernate.Version                    : HHH000412: Hibernate ORM core version 5.6.15.Final
-2026-05-11 17:41:30.269  INFO 90090 --- [           main] o.hibernate.annotations.common.Version   : HCANN000001: Hibernate Commons Annotations {5.1.2.Final}
-2026-05-11 17:41:30.296  INFO 90090 --- [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Starting...
-2026-05-11 17:41:30.359  INFO 90090 --- [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Start completed.
-2026-05-11 17:41:30.364  INFO 90090 --- [           main] org.hibernate.dialect.Dialect            : HHH000400: Using dialect: org.hibernate.dialect.MySQL8Dialect
-2026-05-11 17:41:30.707  INFO 90090 --- [           main] o.h.e.t.j.p.i.JtaPlatformInitiator       : HHH000490: Using JtaPlatform implementation: [org.hibernate.engine.transaction.jta.platform.internal.NoJtaPlatform]
-2026-05-11 17:41:30.711  INFO 90090 --- [           main] j.LocalContainerEntityManagerFactoryBean : Initialized JPA EntityManagerFactory for persistence unit 'default'
-2026-05-11 17:41:31.015  INFO 90090 --- [           main] com.ruleengine.drools.adapter.HisClient  : HIS 客户端未启用，规则执行将仅依赖传入参数
-2026-05-11 17:41:31.015  INFO 90090 --- [           main] com.ruleengine.nlp.NlpService            : HanLP 自定义词典目录存在，医学 NLP 服务已就绪
-2026-05-11 17:41:31.129  WARN 90090 --- [           main] o.d.c.kie.builder.impl.KieProject        : No files found for KieBase defaultKieBase
-2026-05-11 17:41:31.155  WARN 90090 --- [           main] JpaBaseConfiguration$JpaWebConfiguration : spring.jpa.open-in-view is enabled by default. Therefore, database queries may be performed during view rendering. Explicitly configure spring.jpa.open-in-view to disable this warning
-2026-05-11 17:41:31.258  INFO 90090 --- [           main] o.s.b.a.e.web.EndpointLinksResolver      : Exposing 3 endpoint(s) beneath base path '/actuator'
-2026-05-11 17:41:31.271  WARN 90090 --- [           main] ConfigServletWebServerApplicationContext : Exception encountered during context initialization - cancelling refresh attempt: org.springframework.context.ApplicationContextException: Failed to start bean 'webServerStartStop'; nested exception is org.springframework.boot.web.server.PortInUseException: Port 8081 is already in use
-2026-05-11 17:41:31.274  INFO 90090 --- [           main] j.LocalContainerEntityManagerFactoryBean : Closing JPA EntityManagerFactory for persistence unit 'default'
-2026-05-11 17:41:31.275  INFO 90090 --- [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Shutdown initiated...
-2026-05-11 17:41:31.277  INFO 90090 --- [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Shutdown completed.
-2026-05-11 17:41:31.277  INFO 90090 --- [           main] o.apache.catalina.core.StandardService   : Stopping service [Tomcat]
-2026-05-11 17:41:31.284  INFO 90090 --- [           main] ConditionEvaluationReportLoggingListener : 
-
-Error starting ApplicationContext. To display the conditions report re-run your application with 'debug' enabled.
-2026-05-11 17:41:31.289 ERROR 90090 --- [           main] o.s.b.d.LoggingFailureAnalysisReporter   : 
-
-***************************
-APPLICATION FAILED TO START
-***************************
-
-Description:
-
-Web server failed to start. Port 8081 was already in use.
-
-Action:
-
-Identify and stop the process that's listening on port 8081 or configure this application to listen on another port.
-
-[[1;31mERROR[m] Failed to execute goal [32morg.springframework.boot:spring-boot-maven-plugin:2.7.18:run[m [1m(default-cli)[m on project [36mrule-engine-server[m: [1;31mApplication finished with exit code: 1[m -> [1m[Help 1][m
-[[1;31mERROR[m] 
-[[1;31mERROR[m] To see the full stack trace of the errors, re-run Maven with the [1m-e[m switch.
-[[1;31mERROR[m] Re-run Maven using the [1m-X[m switch to enable full debug logging.
-[[1;31mERROR[m] 
-[[1;31mERROR[m] For more information about the errors and possible solutions, please read the following articles:
-[[1;31mERROR[m] [1m[Help 1][m http://cwiki.apache.org/confluence/display/MAVEN/MojoExecutionException
+2026-05-12 14:55:08.013  INFO 16861 --- [           main] com.ruleengine.RuleEngineApplication     : Starting RuleEngineApplication using Java 1.8.0_452 on qiuqiudeMacBook-Air-7.local with PID 16861 (/Users/qiuqiu/Documents/QIUBIN/project/rule-engine/rule-engine-server/target/classes started by qiuqiu in /Users/qiuqiu/Documents/QIUBIN/project/rule-engine/rule-engine-server)
+2026-05-12 14:55:08.014 DEBUG 16861 --- [           main] com.ruleengine.RuleEngineApplication     : Running with Spring Boot v2.7.18, Spring v5.3.31
+2026-05-12 14:55:08.014  INFO 16861 --- [           main] com.ruleengine.RuleEngineApplication     : No active profile set, falling back to 1 default profile: "default"
+2026-05-12 14:55:08.327  INFO 16861 --- [           main] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data JPA repositories in DEFAULT mode.
+2026-05-12 14:55:08.356  INFO 16861 --- [           main] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 26 ms. Found 11 JPA repository interfaces.
+2026-05-12 14:55:08.562  INFO 16861 --- [           main] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat initialized with port(s): 8081 (http)
+2026-05-12 14:55:08.566  INFO 16861 --- [           main] o.apache.catalina.core.StandardService   : Starting service [Tomcat]
+2026-05-12 14:55:08.566  INFO 16861 --- [           main] org.apache.catalina.core.StandardEngine  : Starting Servlet engine: [Apache Tomcat/9.0.83]
+2026-05-12 14:55:08.606  INFO 16861 --- [           main] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring embedded WebApplicationContext
+2026-05-12 14:55:08.606  INFO 16861 --- [           main] w.s.c.ServletWebServerApplicationContext : Root WebApplicationContext: initialization completed in 577 ms
+2026-05-12 14:55:08.702  INFO 16861 --- [           main] o.hibernate.jpa.internal.util.LogHelper  : HHH000204: Processing PersistenceUnitInfo [name: default]
+2026-05-12 14:55:08.718  INFO 16861 --- [           main] org.hibernate.Version                    : HHH000412: Hibernate ORM core version 5.6.15.Final
+2026-05-12 14:55:08.788  INFO 16861 --- [           main] o.hibernate.annotations.common.Version   : HCANN000001: Hibernate Commons Annotations {5.1.2.Final}
+2026-05-12 14:55:08.815  INFO 16861 --- [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Starting...
+2026-05-12 14:55:08.876  INFO 16861 --- [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Start completed.
+2026-05-12 14:55:08.881  INFO 16861 --- [           main] org.hibernate.dialect.Dialect            : HHH000400: Using dialect: org.hibernate.dialect.MySQL8Dialect
+2026-05-12 14:55:09.270  INFO 16861 --- [           main] o.h.e.t.j.p.i.JtaPlatformInitiator       : HHH000490: Using JtaPlatform implementation: [org.hibernate.engine.transaction.jta.platform.internal.NoJtaPlatform]
+2026-05-12 14:55:09.273  INFO 16861 --- [           main] j.LocalContainerEntityManagerFactoryBean : Initialized JPA EntityManagerFactory for persistence unit 'default'
+2026-05-12 14:55:09.583  INFO 16861 --- [           main] com.ruleengine.drools.adapter.HisClient  : HIS 客户端未启用，规则执行将仅依赖传入参数
+2026-05-12 14:55:09.583  INFO 16861 --- [           main] com.ruleengine.nlp.NlpService            : HanLP 自定义词典目录存在，医学 NLP 服务已就绪
+2026-05-12 14:55:09.705  WARN 16861 --- [           main] o.d.c.kie.builder.impl.KieProject        : No files found for KieBase defaultKieBase
+2026-05-12 14:55:09.730  WARN 16861 --- [           main] JpaBaseConfiguration$JpaWebConfiguration : spring.jpa.open-in-view is enabled by default. Therefore, database queries may be performed during view rendering. Explicitly configure spring.jpa.open-in-view to disable this warning
+2026-05-12 14:55:09.854  INFO 16861 --- [           main] o.s.b.a.e.web.EndpointLinksResolver      : Exposing 3 endpoint(s) beneath base path '/actuator'
+2026-05-12 14:55:09.873  INFO 16861 --- [           main] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat started on port(s): 8081 (http) with context path ''
+2026-05-12 14:55:09.879  INFO 16861 --- [           main] com.ruleengine.RuleEngineApplication     : Started RuleEngineApplication in 2.029 seconds (JVM running for 2.204)
+2026-05-12 14:55:09.932  WARN 16861 --- [           main] com.ruleengine.config.DataInitializer    : Reverse migration skipped: StatementCallback; bad SQL grammar [SELECT condition_model_id, data_element_id FROM condition_model_data_elements]; nested exception is java.sql.SQLSyntaxErrorException: Table 'ruleengine.condition_model_data_elements' doesn't exist
+2026-05-12 14:55:09.932  INFO 16861 --- [           main] com.ruleengine.config.DataInitializer    : 开始检查并初始化基础数据...
+Hibernate: 
+    select
+        count(*) as col_0_0_ 
+    from
+        dictionary dictionary0_
+2026-05-12 14:55:09.960  INFO 16861 --- [           main] com.ruleengine.config.DataInitializer    : 字典数据已存在，跳过
+Hibernate: 
+    select
+        count(*) as col_0_0_ 
+    from
+        data_set dataset0_
+2026-05-12 14:55:09.962  INFO 16861 --- [           main] com.ruleengine.config.DataInitializer    : 数据集已存在，跳过
+Hibernate: 
+    select
+        dataset0_.id as id1_4_,
+        dataset0_.cat_l1_code as cat_l2_4_,
+        dataset0_.cat_l1_name as cat_l3_4_,
+        dataset0_.cat_l2_code as cat_l4_4_,
+        dataset0_.cat_l2_name as cat_l5_4_,
+        dataset0_.cat_l3_code as cat_l6_4_,
+        dataset0_.cat_l3_name as cat_l7_4_,
+        dataset0_.code as code8_4_,
+        dataset0_.created_at as created_9_4_,
+        dataset0_.description as descrip10_4_,
+        dataset0_.english_name as english11_4_,
+        dataset0_.name as name12_4_,
+        dataset0_.sort_order as sort_or13_4_,
+        dataset0_.status as status14_4_,
+        dataset0_.updated_at as updated15_4_ 
+    from
+        data_set dataset0_ 
+    where
+        dataset0_.code=?
+Hibernate: 
+    select
+        count(*) as col_0_0_ 
+    from
+        data_element dataelemen0_
+Hibernate: 
+    select
+        dataelemen0_.id as id1_3_,
+        dataelemen0_.camel_name as camel_na2_3_,
+        dataelemen0_.code as code3_3_,
+        dataelemen0_.created_at as created_4_3_,
+        dataelemen0_.data_type as data_typ5_3_,
+        dataelemen0_.dataset_id as dataset_6_3_,
+        dataelemen0_.definition as definiti7_3_,
+        dataelemen0_.description as descript8_3_,
+        dataelemen0_.dict_code as dict_cod9_3_,
+        dataelemen0_.english_name as english10_3_,
+        dataelemen0_.metadata as metadat11_3_,
+        dataelemen0_.name as name12_3_,
+        dataelemen0_.sensitivity as sensiti13_3_,
+        dataelemen0_.sort_order as sort_or14_3_,
+        dataelemen0_.standard_code as standar15_3_,
+        dataelemen0_.status as status16_3_,
+        dataelemen0_.updated_at as updated17_3_ 
+    from
+        data_element dataelemen0_
+2026-05-12 14:55:10.032  INFO 16861 --- [           main] com.ruleengine.config.DataInitializer    : 数据元已存在，跳过
+Hibernate: 
+    select
+        count(*) as col_0_0_ 
+    from
+        rule_type ruletype0_
+2026-05-12 14:55:10.045  INFO 16861 --- [           main] com.ruleengine.config.DataInitializer    : 规则类型已存在，跳过
+Hibernate: 
+    select
+        conditionm0_.id as id1_1_,
+        conditionm0_.code as code2_1_,
+        conditionm0_.created_at as created_3_1_,
+        conditionm0_.description as descript4_1_,
+        conditionm0_.name as name5_1_,
+        conditionm0_.parent_id as parent_i6_1_,
+        conditionm0_.sort_order as sort_ord7_1_,
+        conditionm0_.status as status8_1_,
+        conditionm0_.updated_at as updated_9_1_ 
+    from
+        condition_model_category conditionm0_ 
+    where
+        conditionm0_.code=?
+Hibernate: 
+    select
+        conditionm0_.id as id1_1_,
+        conditionm0_.code as code2_1_,
+        conditionm0_.created_at as created_3_1_,
+        conditionm0_.description as descript4_1_,
+        conditionm0_.name as name5_1_,
+        conditionm0_.parent_id as parent_i6_1_,
+        conditionm0_.sort_order as sort_ord7_1_,
+        conditionm0_.status as status8_1_,
+        conditionm0_.updated_at as updated_9_1_ 
+    from
+        condition_model_category conditionm0_ 
+    where
+        conditionm0_.code=?
+Hibernate: 
+    select
+        conditionm0_.id as id1_1_,
+        conditionm0_.code as code2_1_,
+        conditionm0_.created_at as created_3_1_,
+        conditionm0_.description as descript4_1_,
+        conditionm0_.name as name5_1_,
+        conditionm0_.parent_id as parent_i6_1_,
+        conditionm0_.sort_order as sort_ord7_1_,
+        conditionm0_.status as status8_1_,
+        conditionm0_.updated_at as updated_9_1_ 
+    from
+        condition_model_category conditionm0_ 
+    where
+        conditionm0_.code=?
+Hibernate: 
+    select
+        conditionm0_.id as id1_1_,
+        conditionm0_.code as code2_1_,
+        conditionm0_.created_at as created_3_1_,
+        conditionm0_.description as descript4_1_,
+        conditionm0_.name as name5_1_,
+        conditionm0_.parent_id as parent_i6_1_,
+        conditionm0_.sort_order as sort_ord7_1_,
+        conditionm0_.status as status8_1_,
+        conditionm0_.updated_at as updated_9_1_ 
+    from
+        condition_model_category conditionm0_ 
+    where
+        conditionm0_.code=?
+Hibernate: 
+    select
+        conditionm0_.id as id1_1_,
+        conditionm0_.code as code2_1_,
+        conditionm0_.created_at as created_3_1_,
+        conditionm0_.description as descript4_1_,
+        conditionm0_.name as name5_1_,
+        conditionm0_.parent_id as parent_i6_1_,
+        conditionm0_.sort_order as sort_ord7_1_,
+        conditionm0_.status as status8_1_,
+        conditionm0_.updated_at as updated_9_1_ 
+    from
+        condition_model_category conditionm0_ 
+    where
+        conditionm0_.code=?
+Hibernate: 
+    select
+        conditionm0_.id as id1_1_,
+        conditionm0_.code as code2_1_,
+        conditionm0_.created_at as created_3_1_,
+        conditionm0_.description as descript4_1_,
+        conditionm0_.name as name5_1_,
+        conditionm0_.parent_id as parent_i6_1_,
+        conditionm0_.sort_order as sort_ord7_1_,
+        conditionm0_.status as status8_1_,
+        conditionm0_.updated_at as updated_9_1_ 
+    from
+        condition_model_category conditionm0_ 
+    where
+        conditionm0_.code=?
+Hibernate: 
+    select
+        count(*) as col_0_0_ 
+    from
+        condition_model conditionm0_
+Hibernate: 
+    select
+        conditionm0_.id as id1_0_,
+        conditionm0_.category_id as category2_0_,
+        conditionm0_.code as code3_0_,
+        conditionm0_.created_at as created_4_0_,
+        conditionm0_.data_element_id as data_ele5_0_,
+        conditionm0_.data_type as data_typ6_0_,
+        conditionm0_.metadata as metadata7_0_,
+        conditionm0_.name as name8_0_,
+        conditionm0_.node_usage as node_usa9_0_,
+        conditionm0_.updated_at as updated10_0_,
+        conditionm0_.value_source as value_s11_0_ 
+    from
+        condition_model conditionm0_
+Hibernate: 
+    select
+        conditionm0_.id as id1_1_,
+        conditionm0_.code as code2_1_,
+        conditionm0_.created_at as created_3_1_,
+        conditionm0_.description as descript4_1_,
+        conditionm0_.name as name5_1_,
+        conditionm0_.parent_id as parent_i6_1_,
+        conditionm0_.sort_order as sort_ord7_1_,
+        conditionm0_.status as status8_1_,
+        conditionm0_.updated_at as updated_9_1_ 
+    from
+        condition_model_category conditionm0_ 
+    where
+        conditionm0_.code=?
+Hibernate: 
+    select
+        conditionm0_.id as id1_1_,
+        conditionm0_.code as code2_1_,
+        conditionm0_.created_at as created_3_1_,
+        conditionm0_.description as descript4_1_,
+        conditionm0_.name as name5_1_,
+        conditionm0_.parent_id as parent_i6_1_,
+        conditionm0_.sort_order as sort_ord7_1_,
+        conditionm0_.status as status8_1_,
+        conditionm0_.updated_at as updated_9_1_ 
+    from
+        condition_model_category conditionm0_ 
+    where
+        conditionm0_.code=?
+Hibernate: 
+    select
+        conditionm0_.id as id1_1_,
+        conditionm0_.code as code2_1_,
+        conditionm0_.created_at as created_3_1_,
+        conditionm0_.description as descript4_1_,
+        conditionm0_.name as name5_1_,
+        conditionm0_.parent_id as parent_i6_1_,
+        conditionm0_.sort_order as sort_ord7_1_,
+        conditionm0_.status as status8_1_,
+        conditionm0_.updated_at as updated_9_1_ 
+    from
+        condition_model_category conditionm0_ 
+    where
+        conditionm0_.code=?
+Hibernate: 
+    select
+        conditionm0_.id as id1_1_,
+        conditionm0_.code as code2_1_,
+        conditionm0_.created_at as created_3_1_,
+        conditionm0_.description as descript4_1_,
+        conditionm0_.name as name5_1_,
+        conditionm0_.parent_id as parent_i6_1_,
+        conditionm0_.sort_order as sort_ord7_1_,
+        conditionm0_.status as status8_1_,
+        conditionm0_.updated_at as updated_9_1_ 
+    from
+        condition_model_category conditionm0_ 
+    where
+        conditionm0_.code=?
+Hibernate: 
+    select
+        conditionm0_.id as id1_1_,
+        conditionm0_.code as code2_1_,
+        conditionm0_.created_at as created_3_1_,
+        conditionm0_.description as descript4_1_,
+        conditionm0_.name as name5_1_,
+        conditionm0_.parent_id as parent_i6_1_,
+        conditionm0_.sort_order as sort_ord7_1_,
+        conditionm0_.status as status8_1_,
+        conditionm0_.updated_at as updated_9_1_ 
+    from
+        condition_model_category conditionm0_ 
+    where
+        conditionm0_.code=?
+Hibernate: 
+    select
+        dataelemen0_.id as id1_3_,
+        dataelemen0_.camel_name as camel_na2_3_,
+        dataelemen0_.code as code3_3_,
+        dataelemen0_.created_at as created_4_3_,
+        dataelemen0_.data_type as data_typ5_3_,
+        dataelemen0_.dataset_id as dataset_6_3_,
+        dataelemen0_.definition as definiti7_3_,
+        dataelemen0_.description as descript8_3_,
+        dataelemen0_.dict_code as dict_cod9_3_,
+        dataelemen0_.english_name as english10_3_,
+        dataelemen0_.metadata as metadat11_3_,
+        dataelemen0_.name as name12_3_,
+        dataelemen0_.sensitivity as sensiti13_3_,
+        dataelemen0_.sort_order as sort_or14_3_,
+        dataelemen0_.standard_code as standar15_3_,
+        dataelemen0_.status as status16_3_,
+        dataelemen0_.updated_at as updated17_3_ 
+    from
+        data_element dataelemen0_ 
+    where
+        dataelemen0_.code=?
+Hibernate: 
+    select
+        dataelemen0_.id as id1_3_,
+        dataelemen0_.camel_name as camel_na2_3_,
+        dataelemen0_.code as code3_3_,
+        dataelemen0_.created_at as created_4_3_,
+        dataelemen0_.data_type as data_typ5_3_,
+        dataelemen0_.dataset_id as dataset_6_3_,
+        dataelemen0_.definition as definiti7_3_,
+        dataelemen0_.description as descript8_3_,
+        dataelemen0_.dict_code as dict_cod9_3_,
+        dataelemen0_.english_name as english10_3_,
+        dataelemen0_.metadata as metadat11_3_,
+        dataelemen0_.name as name12_3_,
+        dataelemen0_.sensitivity as sensiti13_3_,
+        dataelemen0_.sort_order as sort_or14_3_,
+        dataelemen0_.standard_code as standar15_3_,
+        dataelemen0_.status as status16_3_,
+        dataelemen0_.updated_at as updated17_3_ 
+    from
+        data_element dataelemen0_ 
+    where
+        dataelemen0_.code=?
+Hibernate: 
+    select
+        dataelemen0_.id as id1_3_,
+        dataelemen0_.camel_name as camel_na2_3_,
+        dataelemen0_.code as code3_3_,
+        dataelemen0_.created_at as created_4_3_,
+        dataelemen0_.data_type as data_typ5_3_,
+        dataelemen0_.dataset_id as dataset_6_3_,
+        dataelemen0_.definition as definiti7_3_,
+        dataelemen0_.description as descript8_3_,
+        dataelemen0_.dict_code as dict_cod9_3_,
+        dataelemen0_.english_name as english10_3_,
+        dataelemen0_.metadata as metadat11_3_,
+        dataelemen0_.name as name12_3_,
+        dataelemen0_.sensitivity as sensiti13_3_,
+        dataelemen0_.sort_order as sort_or14_3_,
+        dataelemen0_.standard_code as standar15_3_,
+        dataelemen0_.status as status16_3_,
+        dataelemen0_.updated_at as updated17_3_ 
+    from
+        data_element dataelemen0_ 
+    where
+        dataelemen0_.code=?
+Hibernate: 
+    select
+        dataelemen0_.id as id1_3_,
+        dataelemen0_.camel_name as camel_na2_3_,
+        dataelemen0_.code as code3_3_,
+        dataelemen0_.created_at as created_4_3_,
+        dataelemen0_.data_type as data_typ5_3_,
+        dataelemen0_.dataset_id as dataset_6_3_,
+        dataelemen0_.definition as definiti7_3_,
+        dataelemen0_.description as descript8_3_,
+        dataelemen0_.dict_code as dict_cod9_3_,
+        dataelemen0_.english_name as english10_3_,
+        dataelemen0_.metadata as metadat11_3_,
+        dataelemen0_.name as name12_3_,
+        dataelemen0_.sensitivity as sensiti13_3_,
+        dataelemen0_.sort_order as sort_or14_3_,
+        dataelemen0_.standard_code as standar15_3_,
+        dataelemen0_.status as status16_3_,
+        dataelemen0_.updated_at as updated17_3_ 
+    from
+        data_element dataelemen0_ 
+    where
+        dataelemen0_.code=?
+Hibernate: 
+    select
+        dataelemen0_.id as id1_3_,
+        dataelemen0_.camel_name as camel_na2_3_,
+        dataelemen0_.code as code3_3_,
+        dataelemen0_.created_at as created_4_3_,
+        dataelemen0_.data_type as data_typ5_3_,
+        dataelemen0_.dataset_id as dataset_6_3_,
+        dataelemen0_.definition as definiti7_3_,
+        dataelemen0_.description as descript8_3_,
+        dataelemen0_.dict_code as dict_cod9_3_,
+        dataelemen0_.english_name as english10_3_,
+        dataelemen0_.metadata as metadat11_3_,
+        dataelemen0_.name as name12_3_,
+        dataelemen0_.sensitivity as sensiti13_3_,
+        dataelemen0_.sort_order as sort_or14_3_,
+        dataelemen0_.standard_code as standar15_3_,
+        dataelemen0_.status as status16_3_,
+        dataelemen0_.updated_at as updated17_3_ 
+    from
+        data_element dataelemen0_ 
+    where
+        dataelemen0_.code=?
+Hibernate: 
+    select
+        dataelemen0_.id as id1_3_,
+        dataelemen0_.camel_name as camel_na2_3_,
+        dataelemen0_.code as code3_3_,
+        dataelemen0_.created_at as created_4_3_,
+        dataelemen0_.data_type as data_typ5_3_,
+        dataelemen0_.dataset_id as dataset_6_3_,
+        dataelemen0_.definition as definiti7_3_,
+        dataelemen0_.description as descript8_3_,
+        dataelemen0_.dict_code as dict_cod9_3_,
+        dataelemen0_.english_name as english10_3_,
+        dataelemen0_.metadata as metadat11_3_,
+        dataelemen0_.name as name12_3_,
+        dataelemen0_.sensitivity as sensiti13_3_,
+        dataelemen0_.sort_order as sort_or14_3_,
+        dataelemen0_.standard_code as standar15_3_,
+        dataelemen0_.status as status16_3_,
+        dataelemen0_.updated_at as updated17_3_ 
+    from
+        data_element dataelemen0_ 
+    where
+        dataelemen0_.code=?
+Hibernate: 
+    select
+        dataelemen0_.id as id1_3_,
+        dataelemen0_.camel_name as camel_na2_3_,
+        dataelemen0_.code as code3_3_,
+        dataelemen0_.created_at as created_4_3_,
+        dataelemen0_.data_type as data_typ5_3_,
+        dataelemen0_.dataset_id as dataset_6_3_,
+        dataelemen0_.definition as definiti7_3_,
+        dataelemen0_.description as descript8_3_,
+        dataelemen0_.dict_code as dict_cod9_3_,
+        dataelemen0_.english_name as english10_3_,
+        dataelemen0_.metadata as metadat11_3_,
+        dataelemen0_.name as name12_3_,
+        dataelemen0_.sensitivity as sensiti13_3_,
+        dataelemen0_.sort_order as sort_or14_3_,
+        dataelemen0_.standard_code as standar15_3_,
+        dataelemen0_.status as status16_3_,
+        dataelemen0_.updated_at as updated17_3_ 
+    from
+        data_element dataelemen0_ 
+    where
+        dataelemen0_.code=?
+Hibernate: 
+    select
+        dataelemen0_.id as id1_3_,
+        dataelemen0_.camel_name as camel_na2_3_,
+        dataelemen0_.code as code3_3_,
+        dataelemen0_.created_at as created_4_3_,
+        dataelemen0_.data_type as data_typ5_3_,
+        dataelemen0_.dataset_id as dataset_6_3_,
+        dataelemen0_.definition as definiti7_3_,
+        dataelemen0_.description as descript8_3_,
+        dataelemen0_.dict_code as dict_cod9_3_,
+        dataelemen0_.english_name as english10_3_,
+        dataelemen0_.metadata as metadat11_3_,
+        dataelemen0_.name as name12_3_,
+        dataelemen0_.sensitivity as sensiti13_3_,
+        dataelemen0_.sort_order as sort_or14_3_,
+        dataelemen0_.standard_code as standar15_3_,
+        dataelemen0_.status as status16_3_,
+        dataelemen0_.updated_at as updated17_3_ 
+    from
+        data_element dataelemen0_ 
+    where
+        dataelemen0_.code=?
+Hibernate: 
+    select
+        dataelemen0_.id as id1_3_,
+        dataelemen0_.camel_name as camel_na2_3_,
+        dataelemen0_.code as code3_3_,
+        dataelemen0_.created_at as created_4_3_,
+        dataelemen0_.data_type as data_typ5_3_,
+        dataelemen0_.dataset_id as dataset_6_3_,
+        dataelemen0_.definition as definiti7_3_,
+        dataelemen0_.description as descript8_3_,
+        dataelemen0_.dict_code as dict_cod9_3_,
+        dataelemen0_.english_name as english10_3_,
+        dataelemen0_.metadata as metadat11_3_,
+        dataelemen0_.name as name12_3_,
+        dataelemen0_.sensitivity as sensiti13_3_,
+        dataelemen0_.sort_order as sort_or14_3_,
+        dataelemen0_.standard_code as standar15_3_,
+        dataelemen0_.status as status16_3_,
+        dataelemen0_.updated_at as updated17_3_ 
+    from
+        data_element dataelemen0_ 
+    where
+        dataelemen0_.code=?
+Hibernate: 
+    select
+        dataelemen0_.id as id1_3_,
+        dataelemen0_.camel_name as camel_na2_3_,
+        dataelemen0_.code as code3_3_,
+        dataelemen0_.created_at as created_4_3_,
+        dataelemen0_.data_type as data_typ5_3_,
+        dataelemen0_.dataset_id as dataset_6_3_,
+        dataelemen0_.definition as definiti7_3_,
+        dataelemen0_.description as descript8_3_,
+        dataelemen0_.dict_code as dict_cod9_3_,
+        dataelemen0_.english_name as english10_3_,
+        dataelemen0_.metadata as metadat11_3_,
+        dataelemen0_.name as name12_3_,
+        dataelemen0_.sensitivity as sensiti13_3_,
+        dataelemen0_.sort_order as sort_or14_3_,
+        dataelemen0_.standard_code as standar15_3_,
+        dataelemen0_.status as status16_3_,
+        dataelemen0_.updated_at as updated17_3_ 
+    from
+        data_element dataelemen0_ 
+    where
+        dataelemen0_.code=?
+Hibernate: 
+    select
+        dataelemen0_.id as id1_3_,
+        dataelemen0_.camel_name as camel_na2_3_,
+        dataelemen0_.code as code3_3_,
+        dataelemen0_.created_at as created_4_3_,
+        dataelemen0_.data_type as data_typ5_3_,
+        dataelemen0_.dataset_id as dataset_6_3_,
+        dataelemen0_.definition as definiti7_3_,
+        dataelemen0_.description as descript8_3_,
+        dataelemen0_.dict_code as dict_cod9_3_,
+        dataelemen0_.english_name as english10_3_,
+        dataelemen0_.metadata as metadat11_3_,
+        dataelemen0_.name as name12_3_,
+        dataelemen0_.sensitivity as sensiti13_3_,
+        dataelemen0_.sort_order as sort_or14_3_,
+        dataelemen0_.standard_code as standar15_3_,
+        dataelemen0_.status as status16_3_,
+        dataelemen0_.updated_at as updated17_3_ 
+    from
+        data_element dataelemen0_ 
+    where
+        dataelemen0_.code=?
+Hibernate: 
+    insert 
+    into
+        condition_model
+        (category_id, code, created_at, data_element_id, data_type, metadata, name, node_usage, updated_at, value_source) 
+    values
+        (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+Hibernate: 
+    insert 
+    into
+        condition_model
+        (category_id, code, created_at, data_element_id, data_type, metadata, name, node_usage, updated_at, value_source) 
+    values
+        (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+Hibernate: 
+    select
+        dataelemen0_.id as id1_3_,
+        dataelemen0_.camel_name as camel_na2_3_,
+        dataelemen0_.code as code3_3_,
+        dataelemen0_.created_at as created_4_3_,
+        dataelemen0_.data_type as data_typ5_3_,
+        dataelemen0_.dataset_id as dataset_6_3_,
+        dataelemen0_.definition as definiti7_3_,
+        dataelemen0_.description as descript8_3_,
+        dataelemen0_.dict_code as dict_cod9_3_,
+        dataelemen0_.english_name as english10_3_,
+        dataelemen0_.metadata as metadat11_3_,
+        dataelemen0_.name as name12_3_,
+        dataelemen0_.sensitivity as sensiti13_3_,
+        dataelemen0_.sort_order as sort_or14_3_,
+        dataelemen0_.standard_code as standar15_3_,
+        dataelemen0_.status as status16_3_,
+        dataelemen0_.updated_at as updated17_3_ 
+    from
+        data_element dataelemen0_ 
+    where
+        dataelemen0_.code=?
+Hibernate: 
+    select
+        dataelemen0_.id as id1_3_,
+        dataelemen0_.camel_name as camel_na2_3_,
+        dataelemen0_.code as code3_3_,
+        dataelemen0_.created_at as created_4_3_,
+        dataelemen0_.data_type as data_typ5_3_,
+        dataelemen0_.dataset_id as dataset_6_3_,
+        dataelemen0_.definition as definiti7_3_,
+        dataelemen0_.description as descript8_3_,
+        dataelemen0_.dict_code as dict_cod9_3_,
+        dataelemen0_.english_name as english10_3_,
+        dataelemen0_.metadata as metadat11_3_,
+        dataelemen0_.name as name12_3_,
+        dataelemen0_.sensitivity as sensiti13_3_,
+        dataelemen0_.sort_order as sort_or14_3_,
+        dataelemen0_.standard_code as standar15_3_,
+        dataelemen0_.status as status16_3_,
+        dataelemen0_.updated_at as updated17_3_ 
+    from
+        data_element dataelemen0_ 
+    where
+        dataelemen0_.code=?
+Hibernate: 
+    select
+        dataelemen0_.id as id1_3_,
+        dataelemen0_.camel_name as camel_na2_3_,
+        dataelemen0_.code as code3_3_,
+        dataelemen0_.created_at as created_4_3_,
+        dataelemen0_.data_type as data_typ5_3_,
+        dataelemen0_.dataset_id as dataset_6_3_,
+        dataelemen0_.definition as definiti7_3_,
+        dataelemen0_.description as descript8_3_,
+        dataelemen0_.dict_code as dict_cod9_3_,
+        dataelemen0_.english_name as english10_3_,
+        dataelemen0_.metadata as metadat11_3_,
+        dataelemen0_.name as name12_3_,
+        dataelemen0_.sensitivity as sensiti13_3_,
+        dataelemen0_.sort_order as sort_or14_3_,
+        dataelemen0_.standard_code as standar15_3_,
+        dataelemen0_.status as status16_3_,
+        dataelemen0_.updated_at as updated17_3_ 
+    from
+        data_element dataelemen0_ 
+    where
+        dataelemen0_.code=?
+Hibernate: 
+    select
+        dataelemen0_.id as id1_3_,
+        dataelemen0_.camel_name as camel_na2_3_,
+        dataelemen0_.code as code3_3_,
+        dataelemen0_.created_at as created_4_3_,
+        dataelemen0_.data_type as data_typ5_3_,
+        dataelemen0_.dataset_id as dataset_6_3_,
+        dataelemen0_.definition as definiti7_3_,
+        dataelemen0_.description as descript8_3_,
+        dataelemen0_.dict_code as dict_cod9_3_,
+        dataelemen0_.english_name as english10_3_,
+        dataelemen0_.metadata as metadat11_3_,
+        dataelemen0_.name as name12_3_,
+        dataelemen0_.sensitivity as sensiti13_3_,
+        dataelemen0_.sort_order as sort_or14_3_,
+        dataelemen0_.standard_code as standar15_3_,
+        dataelemen0_.status as status16_3_,
+        dataelemen0_.updated_at as updated17_3_ 
+    from
+        data_element dataelemen0_ 
+    where
+        dataelemen0_.code=?
+Hibernate: 
+    select
+        dataelemen0_.id as id1_3_,
+        dataelemen0_.camel_name as camel_na2_3_,
+        dataelemen0_.code as code3_3_,
+        dataelemen0_.created_at as created_4_3_,
+        dataelemen0_.data_type as data_typ5_3_,
+        dataelemen0_.dataset_id as dataset_6_3_,
+        dataelemen0_.definition as definiti7_3_,
+        dataelemen0_.description as descript8_3_,
+        dataelemen0_.dict_code as dict_cod9_3_,
+        dataelemen0_.english_name as english10_3_,
+        dataelemen0_.metadata as metadat11_3_,
+        dataelemen0_.name as name12_3_,
+        dataelemen0_.sensitivity as sensiti13_3_,
+        dataelemen0_.sort_order as sort_or14_3_,
+        dataelemen0_.standard_code as standar15_3_,
+        dataelemen0_.status as status16_3_,
+        dataelemen0_.updated_at as updated17_3_ 
+    from
+        data_element dataelemen0_ 
+    where
+        dataelemen0_.code=?
+Hibernate: 
+    select
+        dataelemen0_.id as id1_3_,
+        dataelemen0_.camel_name as camel_na2_3_,
+        dataelemen0_.code as code3_3_,
+        dataelemen0_.created_at as created_4_3_,
+        dataelemen0_.data_type as data_typ5_3_,
+        dataelemen0_.dataset_id as dataset_6_3_,
+        dataelemen0_.definition as definiti7_3_,
+        dataelemen0_.description as descript8_3_,
+        dataelemen0_.dict_code as dict_cod9_3_,
+        dataelemen0_.english_name as english10_3_,
+        dataelemen0_.metadata as metadat11_3_,
+        dataelemen0_.name as name12_3_,
+        dataelemen0_.sensitivity as sensiti13_3_,
+        dataelemen0_.sort_order as sort_or14_3_,
+        dataelemen0_.standard_code as standar15_3_,
+        dataelemen0_.status as status16_3_,
+        dataelemen0_.updated_at as updated17_3_ 
+    from
+        data_element dataelemen0_ 
+    where
+        dataelemen0_.code=?
+Hibernate: 
+    select
+        dataelemen0_.id as id1_3_,
+        dataelemen0_.camel_name as camel_na2_3_,
+        dataelemen0_.code as code3_3_,
+        dataelemen0_.created_at as created_4_3_,
+        dataelemen0_.data_type as data_typ5_3_,
+        dataelemen0_.dataset_id as dataset_6_3_,
+        dataelemen0_.definition as definiti7_3_,
+        dataelemen0_.description as descript8_3_,
+        dataelemen0_.dict_code as dict_cod9_3_,
+        dataelemen0_.english_name as english10_3_,
+        dataelemen0_.metadata as metadat11_3_,
+        dataelemen0_.name as name12_3_,
+        dataelemen0_.sensitivity as sensiti13_3_,
+        dataelemen0_.sort_order as sort_or14_3_,
+        dataelemen0_.standard_code as standar15_3_,
+        dataelemen0_.status as status16_3_,
+        dataelemen0_.updated_at as updated17_3_ 
+    from
+        data_element dataelemen0_ 
+    where
+        dataelemen0_.code=?
+Hibernate: 
+    select
+        dataelemen0_.id as id1_3_,
+        dataelemen0_.camel_name as camel_na2_3_,
+        dataelemen0_.code as code3_3_,
+        dataelemen0_.created_at as created_4_3_,
+        dataelemen0_.data_type as data_typ5_3_,
+        dataelemen0_.dataset_id as dataset_6_3_,
+        dataelemen0_.definition as definiti7_3_,
+        dataelemen0_.description as descript8_3_,
+        dataelemen0_.dict_code as dict_cod9_3_,
+        dataelemen0_.english_name as english10_3_,
+        dataelemen0_.metadata as metadat11_3_,
+        dataelemen0_.name as name12_3_,
+        dataelemen0_.sensitivity as sensiti13_3_,
+        dataelemen0_.sort_order as sort_or14_3_,
+        dataelemen0_.standard_code as standar15_3_,
+        dataelemen0_.status as status16_3_,
+        dataelemen0_.updated_at as updated17_3_ 
+    from
+        data_element dataelemen0_ 
+    where
+        dataelemen0_.code=?
+Hibernate: 
+    select
+        dataelemen0_.id as id1_3_,
+        dataelemen0_.camel_name as camel_na2_3_,
+        dataelemen0_.code as code3_3_,
+        dataelemen0_.created_at as created_4_3_,
+        dataelemen0_.data_type as data_typ5_3_,
+        dataelemen0_.dataset_id as dataset_6_3_,
+        dataelemen0_.definition as definiti7_3_,
+        dataelemen0_.description as descript8_3_,
+        dataelemen0_.dict_code as dict_cod9_3_,
+        dataelemen0_.english_name as english10_3_,
+        dataelemen0_.metadata as metadat11_3_,
+        dataelemen0_.name as name12_3_,
+        dataelemen0_.sensitivity as sensiti13_3_,
+        dataelemen0_.sort_order as sort_or14_3_,
+        dataelemen0_.standard_code as standar15_3_,
+        dataelemen0_.status as status16_3_,
+        dataelemen0_.updated_at as updated17_3_ 
+    from
+        data_element dataelemen0_ 
+    where
+        dataelemen0_.code=?
+Hibernate: 
+    select
+        dataelemen0_.id as id1_3_,
+        dataelemen0_.camel_name as camel_na2_3_,
+        dataelemen0_.code as code3_3_,
+        dataelemen0_.created_at as created_4_3_,
+        dataelemen0_.data_type as data_typ5_3_,
+        dataelemen0_.dataset_id as dataset_6_3_,
+        dataelemen0_.definition as definiti7_3_,
+        dataelemen0_.description as descript8_3_,
+        dataelemen0_.dict_code as dict_cod9_3_,
+        dataelemen0_.english_name as english10_3_,
+        dataelemen0_.metadata as metadat11_3_,
+        dataelemen0_.name as name12_3_,
+        dataelemen0_.sensitivity as sensiti13_3_,
+        dataelemen0_.sort_order as sort_or14_3_,
+        dataelemen0_.standard_code as standar15_3_,
+        dataelemen0_.status as status16_3_,
+        dataelemen0_.updated_at as updated17_3_ 
+    from
+        data_element dataelemen0_ 
+    where
+        dataelemen0_.code=?
+Hibernate: 
+    select
+        dataelemen0_.id as id1_3_,
+        dataelemen0_.camel_name as camel_na2_3_,
+        dataelemen0_.code as code3_3_,
+        dataelemen0_.created_at as created_4_3_,
+        dataelemen0_.data_type as data_typ5_3_,
+        dataelemen0_.dataset_id as dataset_6_3_,
+        dataelemen0_.definition as definiti7_3_,
+        dataelemen0_.description as descript8_3_,
+        dataelemen0_.dict_code as dict_cod9_3_,
+        dataelemen0_.english_name as english10_3_,
+        dataelemen0_.metadata as metadat11_3_,
+        dataelemen0_.name as name12_3_,
+        dataelemen0_.sensitivity as sensiti13_3_,
+        dataelemen0_.sort_order as sort_or14_3_,
+        dataelemen0_.standard_code as standar15_3_,
+        dataelemen0_.status as status16_3_,
+        dataelemen0_.updated_at as updated17_3_ 
+    from
+        data_element dataelemen0_ 
+    where
+        dataelemen0_.code=?
+Hibernate: 
+    select
+        dataelemen0_.id as id1_3_,
+        dataelemen0_.camel_name as camel_na2_3_,
+        dataelemen0_.code as code3_3_,
+        dataelemen0_.created_at as created_4_3_,
+        dataelemen0_.data_type as data_typ5_3_,
+        dataelemen0_.dataset_id as dataset_6_3_,
+        dataelemen0_.definition as definiti7_3_,
+        dataelemen0_.description as descript8_3_,
+        dataelemen0_.dict_code as dict_cod9_3_,
+        dataelemen0_.english_name as english10_3_,
+        dataelemen0_.metadata as metadat11_3_,
+        dataelemen0_.name as name12_3_,
+        dataelemen0_.sensitivity as sensiti13_3_,
+        dataelemen0_.sort_order as sort_or14_3_,
+        dataelemen0_.standard_code as standar15_3_,
+        dataelemen0_.status as status16_3_,
+        dataelemen0_.updated_at as updated17_3_ 
+    from
+        data_element dataelemen0_ 
+    where
+        dataelemen0_.code=?
+Hibernate: 
+    select
+        conditionm0_.id as id1_1_,
+        conditionm0_.code as code2_1_,
+        conditionm0_.created_at as created_3_1_,
+        conditionm0_.description as descript4_1_,
+        conditionm0_.name as name5_1_,
+        conditionm0_.parent_id as parent_i6_1_,
+        conditionm0_.sort_order as sort_ord7_1_,
+        conditionm0_.status as status8_1_,
+        conditionm0_.updated_at as updated_9_1_ 
+    from
+        condition_model_category conditionm0_ 
+    where
+        conditionm0_.code=?
+Hibernate: 
+    select
+        dataset0_.id as id1_4_,
+        dataset0_.cat_l1_code as cat_l2_4_,
+        dataset0_.cat_l1_name as cat_l3_4_,
+        dataset0_.cat_l2_code as cat_l4_4_,
+        dataset0_.cat_l2_name as cat_l5_4_,
+        dataset0_.cat_l3_code as cat_l6_4_,
+        dataset0_.cat_l3_name as cat_l7_4_,
+        dataset0_.code as code8_4_,
+        dataset0_.created_at as created_9_4_,
+        dataset0_.description as descrip10_4_,
+        dataset0_.english_name as english11_4_,
+        dataset0_.name as name12_4_,
+        dataset0_.sort_order as sort_or13_4_,
+        dataset0_.status as status14_4_,
+        dataset0_.updated_at as updated15_4_ 
+    from
+        data_set dataset0_ 
+    where
+        dataset0_.code=?
+Hibernate: 
+    select
+        dataelemen0_.id as id1_3_,
+        dataelemen0_.camel_name as camel_na2_3_,
+        dataelemen0_.code as code3_3_,
+        dataelemen0_.created_at as created_4_3_,
+        dataelemen0_.data_type as data_typ5_3_,
+        dataelemen0_.dataset_id as dataset_6_3_,
+        dataelemen0_.definition as definiti7_3_,
+        dataelemen0_.description as descript8_3_,
+        dataelemen0_.dict_code as dict_cod9_3_,
+        dataelemen0_.english_name as english10_3_,
+        dataelemen0_.metadata as metadat11_3_,
+        dataelemen0_.name as name12_3_,
+        dataelemen0_.sensitivity as sensiti13_3_,
+        dataelemen0_.sort_order as sort_or14_3_,
+        dataelemen0_.standard_code as standar15_3_,
+        dataelemen0_.status as status16_3_,
+        dataelemen0_.updated_at as updated17_3_ 
+    from
+        data_element dataelemen0_ 
+    where
+        dataelemen0_.code=?
+Hibernate: 
+    select
+        conditionm0_.id as id1_1_,
+        conditionm0_.code as code2_1_,
+        conditionm0_.created_at as created_3_1_,
+        conditionm0_.description as descript4_1_,
+        conditionm0_.name as name5_1_,
+        conditionm0_.parent_id as parent_i6_1_,
+        conditionm0_.sort_order as sort_ord7_1_,
+        conditionm0_.status as status8_1_,
+        conditionm0_.updated_at as updated_9_1_ 
+    from
+        condition_model_category conditionm0_ 
+    where
+        conditionm0_.code=?
+Hibernate: 
+    select
+        conditionm0_.id as id1_1_,
+        conditionm0_.code as code2_1_,
+        conditionm0_.created_at as created_3_1_,
+        conditionm0_.description as descript4_1_,
+        conditionm0_.name as name5_1_,
+        conditionm0_.parent_id as parent_i6_1_,
+        conditionm0_.sort_order as sort_ord7_1_,
+        conditionm0_.status as status8_1_,
+        conditionm0_.updated_at as updated_9_1_ 
+    from
+        condition_model_category conditionm0_ 
+    where
+        conditionm0_.code=?
+Hibernate: 
+    select
+        conditionm0_.id as id1_0_,
+        conditionm0_.category_id as category2_0_,
+        conditionm0_.code as code3_0_,
+        conditionm0_.created_at as created_4_0_,
+        conditionm0_.data_element_id as data_ele5_0_,
+        conditionm0_.data_type as data_typ6_0_,
+        conditionm0_.metadata as metadata7_0_,
+        conditionm0_.name as name8_0_,
+        conditionm0_.node_usage as node_usa9_0_,
+        conditionm0_.updated_at as updated10_0_,
+        conditionm0_.value_source as value_s11_0_ 
+    from
+        condition_model conditionm0_
+Hibernate: 
+    select
+        count(*) as col_0_0_ 
+    from
+        result_config resultconf0_
+2026-05-12 14:55:10.526  INFO 16861 --- [           main] com.ruleengine.config.DataInitializer    : 结果配置已存在，跳过
+2026-05-12 14:55:10.526  INFO 16861 --- [           main] com.ruleengine.config.DataInitializer    : 基础数据初始化完成
+Hibernate: 
+    insert 
+    into
+        condition_model_operators
+        (condition_model_id, operator) 
+    values
+        (?, ?)
+Hibernate: 
+    insert 
+    into
+        condition_model_operators
+        (condition_model_id, operator) 
+    values
+        (?, ?)
+Hibernate: 
+    select
+        dictionary0_.id as id1_5_,
+        dictionary0_.code as code2_5_,
+        dictionary0_.created_at as created_3_5_,
+        dictionary0_.description as descript4_5_,
+        dictionary0_.name as name5_5_,
+        dictionary0_.status as status6_5_,
+        dictionary0_.updated_at as updated_7_5_ 
+    from
+        dictionary dictionary0_
+2026-05-12 14:55:10.548 DEBUG 16861 --- [           main] c.r.nlp.MedicalDictionaryExporter        : 字典 [GENDER] 未映射到 HanLP 词性，跳过导出
+Hibernate: 
+    select
+        dictionary0_.id as id1_6_,
+        dictionary0_.created_at as created_2_6_,
+        dictionary0_.dict_code as dict_cod3_6_,
+        dictionary0_.dict_id as dict_id9_6_,
+        dictionary0_.item_code as item_cod4_6_,
+        dictionary0_.item_name as item_nam5_6_,
+        dictionary0_.item_value as item_val6_6_,
+        dictionary0_.sort_order as sort_ord7_6_,
+        dictionary0_.status as status8_6_ 
+    from
+        dictionary_item dictionary0_ 
+    where
+        dictionary0_.dict_code=?
+2026-05-12 14:55:10.568  INFO 16861 --- [           main] c.r.nlp.MedicalDictionaryExporter        : 导出字典 [ICD10] → 2374 条，词性=ndis
+Hibernate: 
+    select
+        dictionary0_.id as id1_6_,
+        dictionary0_.created_at as created_2_6_,
+        dictionary0_.dict_code as dict_cod3_6_,
+        dictionary0_.dict_id as dict_id9_6_,
+        dictionary0_.item_code as item_cod4_6_,
+        dictionary0_.item_name as item_nam5_6_,
+        dictionary0_.item_value as item_val6_6_,
+        dictionary0_.sort_order as sort_ord7_6_,
+        dictionary0_.status as status8_6_ 
+    from
+        dictionary_item dictionary0_ 
+    where
+        dictionary0_.dict_code=?
+2026-05-12 14:55:10.571  INFO 16861 --- [           main] c.r.nlp.MedicalDictionaryExporter        : 导出字典 [DRUG] → 6 条，词性=ndrg
+2026-05-12 14:55:10.571 DEBUG 16861 --- [           main] c.r.nlp.MedicalDictionaryExporter        : 字典 [NURSING_LEVEL] 未映射到 HanLP 词性，跳过导出
+2026-05-12 14:55:10.571 DEBUG 16861 --- [           main] c.r.nlp.MedicalDictionaryExporter        : 字典 [FORBIDDEN_TYPE] 未映射到 HanLP 词性，跳过导出
+2026-05-12 14:55:10.571 DEBUG 16861 --- [           main] c.r.nlp.MedicalDictionaryExporter        : 字典 [forbiden_dict] 未映射到 HanLP 词性，跳过导出
+2026-05-12 14:55:10.571  INFO 16861 --- [           main] c.r.nlp.MedicalDictionaryExporter        : 医学词典导出完成：共 6 个字典，2380 个词条
+2026-05-12 15:01:16.706  INFO 16861 --- [nio-8081-exec-2] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring DispatcherServlet 'dispatcherServlet'
+2026-05-12 15:01:16.706  INFO 16861 --- [nio-8081-exec-2] o.s.web.servlet.DispatcherServlet        : Initializing Servlet 'dispatcherServlet'
+2026-05-12 15:01:16.707  INFO 16861 --- [nio-8081-exec-2] o.s.web.servlet.DispatcherServlet        : Completed initialization in 1 ms
+Hibernate: 
+    select
+        ruletype0_.id as id1_10_,
+        ruletype0_.code as code2_10_,
+        ruletype0_.created_at as created_3_10_,
+        ruletype0_.description as descript4_10_,
+        ruletype0_.name as name5_10_,
+        ruletype0_.status as status6_10_,
+        ruletype0_.updated_at as updated_7_10_ 
+    from
+        rule_type ruletype0_
+Hibernate: 
+    select
+        rule0_.id as id1_8_0_,
+        rule0_.canvas_data as canvas_d2_8_0_,
+        rule0_.code as code3_8_0_,
+        rule0_.created_at as created_4_8_0_,
+        rule0_.drools_drl as drools_d5_8_0_,
+        rule0_.name as name6_8_0_,
+        rule0_.rule_type_id as rule_typ7_8_0_,
+        rule0_.status as status8_8_0_,
+        rule0_.updated_at as updated_9_8_0_,
+        rule0_.version as version10_8_0_ 
+    from
+        rule rule0_ 
+    where
+        rule0_.id=?
+Hibernate: 
+    select
+        ruletype0_.id as id1_10_,
+        ruletype0_.code as code2_10_,
+        ruletype0_.created_at as created_3_10_,
+        ruletype0_.description as descript4_10_,
+        ruletype0_.name as name5_10_,
+        ruletype0_.status as status6_10_,
+        ruletype0_.updated_at as updated_7_10_ 
+    from
+        rule_type ruletype0_
+Hibernate: 
+    select
+        ruletype0_.id as id1_10_,
+        ruletype0_.code as code2_10_,
+        ruletype0_.created_at as created_3_10_,
+        ruletype0_.description as descript4_10_,
+        ruletype0_.name as name5_10_,
+        ruletype0_.status as status6_10_,
+        ruletype0_.updated_at as updated_7_10_ 
+    from
+        rule_type ruletype0_
+Hibernate: 
+    select
+        rule0_.id as id1_8_,
+        rule0_.canvas_data as canvas_d2_8_,
+        rule0_.code as code3_8_,
+        rule0_.created_at as created_4_8_,
+        rule0_.drools_drl as drools_d5_8_,
+        rule0_.name as name6_8_,
+        rule0_.rule_type_id as rule_typ7_8_,
+        rule0_.status as status8_8_,
+        rule0_.updated_at as updated_9_8_,
+        rule0_.version as version10_8_ 
+    from
+        rule rule0_ 
+    where
+        rule0_.rule_type_id=?
+Hibernate: 
+    select
+        rule0_.id as id1_8_,
+        rule0_.canvas_data as canvas_d2_8_,
+        rule0_.code as code3_8_,
+        rule0_.created_at as created_4_8_,
+        rule0_.drools_drl as drools_d5_8_,
+        rule0_.name as name6_8_,
+        rule0_.rule_type_id as rule_typ7_8_,
+        rule0_.status as status8_8_,
+        rule0_.updated_at as updated_9_8_,
+        rule0_.version as version10_8_ 
+    from
+        rule rule0_ 
+    where
+        rule0_.rule_type_id=?
+Hibernate: 
+    select
+        rule0_.id as id1_8_,
+        rule0_.canvas_data as canvas_d2_8_,
+        rule0_.code as code3_8_,
+        rule0_.created_at as created_4_8_,
+        rule0_.drools_drl as drools_d5_8_,
+        rule0_.name as name6_8_,
+        rule0_.rule_type_id as rule_typ7_8_,
+        rule0_.status as status8_8_,
+        rule0_.updated_at as updated_9_8_,
+        rule0_.version as version10_8_ 
+    from
+        rule rule0_ 
+    where
+        rule0_.rule_type_id=?
+Hibernate: 
+    select
+        rule0_.id as id1_8_,
+        rule0_.canvas_data as canvas_d2_8_,
+        rule0_.code as code3_8_,
+        rule0_.created_at as created_4_8_,
+        rule0_.drools_drl as drools_d5_8_,
+        rule0_.name as name6_8_,
+        rule0_.rule_type_id as rule_typ7_8_,
+        rule0_.status as status8_8_,
+        rule0_.updated_at as updated_9_8_,
+        rule0_.version as version10_8_ 
+    from
+        rule rule0_ 
+    where
+        rule0_.rule_type_id=?
+Hibernate: 
+    select
+        rule0_.id as id1_8_,
+        rule0_.canvas_data as canvas_d2_8_,
+        rule0_.code as code3_8_,
+        rule0_.created_at as created_4_8_,
+        rule0_.drools_drl as drools_d5_8_,
+        rule0_.name as name6_8_,
+        rule0_.rule_type_id as rule_typ7_8_,
+        rule0_.status as status8_8_,
+        rule0_.updated_at as updated_9_8_,
+        rule0_.version as version10_8_ 
+    from
+        rule rule0_ 
+    where
+        rule0_.rule_type_id=?
+Hibernate: 
+    select
+        ruletype0_.id as id1_10_,
+        ruletype0_.code as code2_10_,
+        ruletype0_.created_at as created_3_10_,
+        ruletype0_.description as descript4_10_,
+        ruletype0_.name as name5_10_,
+        ruletype0_.status as status6_10_,
+        ruletype0_.updated_at as updated_7_10_ 
+    from
+        rule_type ruletype0_
+Hibernate: 
+    select
+        rule0_.id as id1_8_,
+        rule0_.canvas_data as canvas_d2_8_,
+        rule0_.code as code3_8_,
+        rule0_.created_at as created_4_8_,
+        rule0_.drools_drl as drools_d5_8_,
+        rule0_.name as name6_8_,
+        rule0_.rule_type_id as rule_typ7_8_,
+        rule0_.status as status8_8_,
+        rule0_.updated_at as updated_9_8_,
+        rule0_.version as version10_8_ 
+    from
+        rule rule0_ 
+    where
+        rule0_.rule_type_id=?
+Hibernate: 
+    select
+        ruletype0_.id as id1_10_,
+        ruletype0_.code as code2_10_,
+        ruletype0_.created_at as created_3_10_,
+        ruletype0_.description as descript4_10_,
+        ruletype0_.name as name5_10_,
+        ruletype0_.status as status6_10_,
+        ruletype0_.updated_at as updated_7_10_ 
+    from
+        rule_type ruletype0_
+Hibernate: 
+    select
+        rule0_.id as id1_8_,
+        rule0_.canvas_data as canvas_d2_8_,
+        rule0_.code as code3_8_,
+        rule0_.created_at as created_4_8_,
+        rule0_.drools_drl as drools_d5_8_,
+        rule0_.name as name6_8_,
+        rule0_.rule_type_id as rule_typ7_8_,
+        rule0_.status as status8_8_,
+        rule0_.updated_at as updated_9_8_,
+        rule0_.version as version10_8_ 
+    from
+        rule rule0_ 
+    where
+        rule0_.rule_type_id=?
+2026-05-12 16:08:36.436  WARN 16861 --- [l-1 housekeeper] com.zaxxer.hikari.pool.HikariPool        : HikariPool-1 - Thread starvation or clock leap detected (housekeeper delta=6m56s991ms).
+2026-05-12 16:08:42.246  INFO 16861 --- [ionShutdownHook] j.LocalContainerEntityManagerFactoryBean : Closing JPA EntityManagerFactory for persistence unit 'default'
+2026-05-12 16:08:42.251  INFO 16861 --- [ionShutdownHook] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Shutdown initiated...
+2026-05-12 16:08:42.252  INFO 16861 --- [ionShutdownHook] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Shutdown completed.
