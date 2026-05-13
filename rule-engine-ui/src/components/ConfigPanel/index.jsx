@@ -219,6 +219,8 @@ export default function ConfigPanel({ open, onClose, node, onUpdate }) {
         value: values.value,
         extraValue1: values.extraValue1,
         extraValue2: values.extraValue2,
+        extraValue3: values.extraValue3,
+        extraValue4: values.extraValue4,
         dictCode: values.dictCode,
         allDictCode: values.allDictCode,
         dictAttr: values.dictAttr,
@@ -311,37 +313,38 @@ export default function ConfigPanel({ open, onClose, node, onUpdate }) {
       <Form.Item name="operator" label="计算符" rules={[{ required: true }]}>
         <Select placeholder="选择计算符" onChange={(val) => setSelectedOperator(val)}>
           <OptGroup label="通用计算符">
-            <Option value="==">等于</Option>
-            <Option value="!=">不等于</Option>
-            <Option value=">">大于</Option>
-            <Option value="<">小于</Option>
-            <Option value="contains">包含</Option>
-            <Option value="regex_match">原生正则</Option>
-            <Option value="IN_SET">在集合中</Option>
+            <Option value="==">等于 ==</Option>
+            <Option value="!=">不等于 !=</Option>
+            <Option value=">">大于 &gt;</Option>
+            <Option value="<">小于 &lt;</Option>
+            <Option value="contains">包含 contains</Option>
+            <Option value="regex_match">原生正则 regex_match</Option>
+            <Option value="regex_not_match">原生正则不匹配 regex_not_match</Option>
+            <Option value="IN_SET">在集合中 IN_SET</Option>
           </OptGroup>
           <OptGroup label="脚本计算符">
-            <Option value="regexMatch">单正则匹配</Option>
-            <Option value="multiRegexMatch">多条件正则</Option>
-            <Option value="contradictionCheck">矛盾判断</Option>
-            <Option value="existenceConflict">存在性冲突</Option>
-            <Option value="whitelistMatch">白名单匹配</Option>
-            <Option value="dictMatch">字典匹配</Option>
-            <Option value="dataCheck">数据判断</Option>
-            <Option value="timeCheck">时间判断</Option>
-            <Option value="fieldCompare">字段比对</Option>
+            <Option value="regexMatch">单正则匹配 regexMatch</Option>
+            <Option value="multiRegexMatch">多条件正则 multiRegexMatch</Option>
+            <Option value="contradictionCheck">矛盾判断 contradictionCheck</Option>
+            <Option value="existenceConflict">存在性冲突 existenceConflict</Option>
+            <Option value="whitelistMatch">白名单匹配 whitelistMatch</Option>
+            <Option value="dictMatch">字典匹配 dictMatch</Option>
+            <Option value="dataCheck">数据判断 dataCheck</Option>
+            <Option value="timeCheck">时间判断 timeCheck</Option>
+            <Option value="fieldCompare">字段比对 fieldCompare</Option>
           </OptGroup>
           <OptGroup label="质控计算符">
-            <Option value="lengthCheck">长度校验</Option>
-            <Option value="isBlank">空值校验</Option>
-            <Option value="similarity">相似度比对</Option>
-            <Option value="arrayLength">集合长度</Option>
-            <Option value="arrayIntersect">集合交集</Option>
+            <Option value="lengthCheck">长度校验 lengthCheck</Option>
+            <Option value="isBlank">空值校验 isBlank</Option>
+            <Option value="similarity">相似度比对 similarity</Option>
+            <Option value="arrayLength">集合长度 arrayLength</Option>
+            <Option value="arrayIntersect">集合交集 arrayIntersect</Option>
           </OptGroup>
           <OptGroup label="NLP计算符">
-            <Option value="medicalNer">医学实体提取</Option>
-            <Option value="negationCheck">否定检测</Option>
-            <Option value="tokenSimilarity">分词相似度</Option>
-            <Option value="allNegated">全否定检测</Option>
+            <Option value="medicalNer">医学实体提取 medicalNer</Option>
+            <Option value="negationCheck">否定检测 negationCheck</Option>
+            <Option value="tokenSimilarity">分词相似度 tokenSimilarity</Option>
+            <Option value="allNegated">全否定检测 allNegated</Option>
           </OptGroup>
         </Select>
       </Form.Item>
@@ -401,12 +404,12 @@ export default function ConfigPanel({ open, onClose, node, onUpdate }) {
         <>
           <Form.Item name="value" label="操作符" rules={[{ required: true }]}>
             <Select placeholder="如: >">
-               <Option value="==">==</Option>
-               <Option value="!=">!=</Option>
-               <Option value=">">&gt;</Option>
-               <Option value="<">&lt;</Option>
-               <Option value=">=">&gt;=</Option>
-               <Option value="<=">&lt;=</Option>
+               <Option value="==">等于 ==</Option>
+               <Option value="!=">不等于 !=</Option>
+               <Option value=">">大于 &gt;</Option>
+               <Option value="<">小于 &lt;</Option>
+               <Option value=">=">大于等于 &gt;=</Option>
+               <Option value="<=">小于等于 &lt;=</Option>
             </Select>
           </Form.Item>
           <Form.Item name="extraValue1" label="阈值" rules={[{ required: true }]}>
@@ -429,12 +432,12 @@ export default function ConfigPanel({ open, onClose, node, onUpdate }) {
         <>
           <Form.Item name="value" label="比较符" rules={[{ required: true }]}>
             <Select placeholder="如: >">
-               <Option value=">">大于</Option>
-               <Option value="<">小于</Option>
-               <Option value=">=">大于等于</Option>
-               <Option value="<=">小于等于</Option>
-               <Option value="==">等于</Option>
-               <Option value="!=">不等于</Option>
+               <Option value=">">大于 &gt;</Option>
+               <Option value="<">小于 &lt;</Option>
+               <Option value=">=">大于等于 &gt;=</Option>
+               <Option value="<=">小于等于 &lt;=</Option>
+               <Option value="==">等于 ==</Option>
+               <Option value="!=">不等于 !=</Option>
             </Select>
           </Form.Item>
           <Form.Item name="extraValue1" label="长度阈值" rules={[{ required: true }]}>
@@ -456,12 +459,12 @@ export default function ConfigPanel({ open, onClose, node, onUpdate }) {
         <>
           <Form.Item name="value" label="比较符" rules={[{ required: true }]}>
             <Select placeholder="如: >">
-               <Option value=">">大于</Option>
-               <Option value="<">小于</Option>
-               <Option value=">=">大于等于</Option>
-               <Option value="<=">小于等于</Option>
-               <Option value="==">等于</Option>
-               <Option value="!=">不等于</Option>
+               <Option value=">">大于 &gt;</Option>
+               <Option value="<">小于 &lt;</Option>
+               <Option value=">=">大于等于 &gt;=</Option>
+               <Option value="<=">小于等于 &lt;=</Option>
+               <Option value="==">等于 ==</Option>
+               <Option value="!=">不等于 !=</Option>
             </Select>
           </Form.Item>
           <Form.Item name="extraValue1" label="元素个数阈值" rules={[{ required: true }]}>
@@ -475,12 +478,12 @@ export default function ConfigPanel({ open, onClose, node, onUpdate }) {
           </Form.Item>
           <Form.Item name="extraValue1" label="比较符" rules={[{ required: true }]}>
             <Select placeholder="如: ==">
-               <Option value=">">大于</Option>
-               <Option value="<">小于</Option>
-               <Option value=">=">大于等于</Option>
-               <Option value="<=">小于等于</Option>
-               <Option value="==">等于</Option>
-               <Option value="!=">不等于</Option>
+               <Option value=">">大于 &gt;</Option>
+               <Option value="<">小于 &lt;</Option>
+               <Option value=">=">大于等于 &gt;=</Option>
+               <Option value="<=">小于等于 &lt;=</Option>
+               <Option value="==">等于 ==</Option>
+               <Option value="!=">不等于 !=</Option>
             </Select>
           </Form.Item>
           <Form.Item name="extraValue2" label="交集个数阈值" rules={[{ required: true }]}>
@@ -549,21 +552,21 @@ export default function ConfigPanel({ open, onClose, node, onUpdate }) {
           </Form.Item>
           <Form.Item name="extraValue2" label="比较类型" rules={[{ required: true }]}>
             <Select placeholder="选择比较类型">
-              <Option value="TIME_DIFF_HOUR">时间差（小时）</Option>
-              <Option value="TIME_DIFF_MINUTE">时间差（分钟）</Option>
-              <Option value="TIME_DIFF_DAY">时间差（天）</Option>
-              <Option value="NUMERIC_DIFF">数值差</Option>
-              <Option value="STRING_EQ">字符串相等</Option>
+              <Option value="TIME_DIFF_HOUR">时间差（小时） TIME_DIFF_HOUR</Option>
+              <Option value="TIME_DIFF_MINUTE">时间差（分钟） TIME_DIFF_MINUTE</Option>
+              <Option value="TIME_DIFF_DAY">时间差（天） TIME_DIFF_DAY</Option>
+              <Option value="NUMERIC_DIFF">数值差 NUMERIC_DIFF</Option>
+              <Option value="STRING_EQ">字符串相等 STRING_EQ</Option>
             </Select>
           </Form.Item>
           <Form.Item name="extraValue3" label="比较符" rules={[{ required: true }]}>
             <Select placeholder="选择比较符">
-              <Option value="==">等于</Option>
-              <Option value="!=">不等于</Option>
-              <Option value="&gt;">大于</Option>
-              <Option value="&lt;">小于</Option>
-              <Option value="&gt;=">大于等于</Option>
-              <Option value="&lt;=">小于等于</Option>
+              <Option value="==">等于 ==</Option>
+              <Option value="!=">不等于 !=</Option>
+              <Option value="&gt;">大于 &gt;</Option>
+              <Option value="&lt;">小于 &lt;</Option>
+              <Option value="&gt;=">大于等于 &gt;=</Option>
+              <Option value="&lt;=">小于等于 &lt;=</Option>
             </Select>
           </Form.Item>
           <Form.Item name="extraValue4" label="阈值" rules={[{ required: true }]}>

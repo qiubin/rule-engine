@@ -34,6 +34,9 @@ public class Rule {
     @Enumerated(EnumType.STRING)
     private RuleStatus status = RuleStatus.DRAFT;
 
+    @Column(name = "remark", length = 512)
+    private String remark; // 备注：实现方法关键词+对应计算符+配置要点
+
     @Column(name = "rule_type_id", nullable = false)
     private Long ruleTypeId;
 

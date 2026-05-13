@@ -252,6 +252,8 @@ public class DrlCompiler {
             return String.format("$param.get(\"%s\") != null && String.valueOf($param.get(\"%s\")).contains(\"%s\")", field, field, valueStr);
         } else if ("regex_match".equals(operator)) {
             return String.format("$param.get(\"%s\") != null && String.valueOf($param.get(\"%s\")).matches(\"%s\")", field, field, valueStr);
+        } else if ("regex_not_match".equals(operator)) {
+            return String.format("$param.get(\"%s\") != null && !String.valueOf($param.get(\"%s\")).matches(\"%s\")", field, field, valueStr);
         } else if ("regexMatch".equals(operator)) {
             if (!dictCode.isEmpty()) {
                 return String.format("dictUtils.regexMatch((String)$param.get(\"%s\"), \"%s\", \"%s\")", field, dictCode, dictAttr);

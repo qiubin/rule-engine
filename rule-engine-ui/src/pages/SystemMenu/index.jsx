@@ -3,12 +3,16 @@ import ConditionModelMgr from '../ConditionModelMgr'
 import ResultModelMgr from '../ResultModelMgr'
 import DictionaryMgr from '../DictionaryMgr'
 import DataElementMgr from '../DataElementMgr'
+import AdapterConfigPage from '../AdapterConfigPage'
+import DbConfigPage from '../DbConfigPage'
 
 const TABS = [
   { key: 'models', label: '条件管理' },
   { key: 'results', label: '结果管理' },
   { key: 'dictionaries', label: '字典管理' },
   { key: 'dataElements', label: '数据元管理' },
+  { key: 'adapter', label: '适配器配置' },
+  { key: 'db', label: '数据库配置' },
 ]
 
 export default function SystemMenu() {
@@ -20,6 +24,8 @@ export default function SystemMenu() {
       case 'results': return <ResultModelMgr />
       case 'dictionaries': return <DictionaryMgr />
       case 'dataElements': return <DataElementMgr />
+      case 'adapter': return <AdapterConfigPage />
+      case 'db': return <DbConfigPage />
       default: return <ConditionModelMgr />
     }
   }

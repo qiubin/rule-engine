@@ -30,6 +30,8 @@ public class DataInitializer implements CommandLineRunner {
     private final ConditionModelRepository conditionModelRepository;
     private final ConditionModelCategoryRepository categoryRepository;
     private final DataSetRepository dataSetRepository;
+    private final ResultConfigRepository resultConfigRepository;
+    private final AdapterConfigRepository adapterConfigRepository;
     private final JdbcTemplate jdbcTemplate;
 
     private void ensureTableExists() {
@@ -47,6 +49,7 @@ public class DataInitializer implements CommandLineRunner {
                 "  rule_type_id BIGINT NOT NULL," +
                 "  canvas_data LONGTEXT," +
                 "  drools_drl LONGTEXT," +
+                "  remark VARCHAR(512)," +
                 "  created_at DATETIME DEFAULT CURRENT_TIMESTAMP," +
                 "  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP" +
                 ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4"
@@ -139,8 +142,46 @@ public class DataInitializer implements CommandLineRunner {
         initConditionModels();
         syncResultCategory();
         initForbiddenTypeCondition();
+        initResultConfigs();
+
+        resetAllRulesToDraft();
+        initAdapterConfig();
 
         log.info("基础数据初始化完成");
+    }
+
+    private void initAdapterConfig() {
+        try {
+            List<AdapterConfig> existing = adapterConfigRepository.findAll();
+            if (!existing.isEmpty()) {
+                log.info("适配器配置已存在，跳过初始化");
+                return;
+            }
+            AdapterConfig cfg = new AdapterConfig();
+            cfg.setEnabled(false);
+            cfg.setBaseUrl("");
+            cfg.setAdapterPath("/api/v1/adapter/emr");
+            cfg.setAuthType("none");
+            cfg.setAuthToken("");
+            cfg.setApiKey("");
+            cfg.setConnectTimeoutMs(5000);
+            cfg.setReadTimeoutMs(10000);
+            adapterConfigRepository.save(cfg);
+            log.info("适配器默认配置已创建");
+        } catch (Exception e) {
+            log.warn("适配器配置初始化失败: {}", e.getMessage());
+        }
+    }
+
+    private void resetAllRulesToDraft() {
+        try {
+            int updated = jdbcTemplate.update("UPDATE rule SET status = 'DRAFT' WHERE status = 'PUBLISHED'");
+            if (updated > 0) {
+                log.info("已将 {} 条已发布规则重置为 DRAFT 状态", updated);
+            }
+        } catch (Exception e) {
+            log.warn("重置规则状态失败: {}", e.getMessage());
+        }
     }
 
     private void initDictionaries() {
@@ -360,29 +401,24 @@ public class DataInitializer implements CommandLineRunner {
 
     private void initDataElements() {
         DataSet generalSet = dataSetRepository.findByCode("GENERAL").orElse(null);
-        if (dataElementRepository.count() > 0) {
-            // 为现有数据元补充 datasetId
-            if (generalSet != null) {
-                boolean needFix = dataElementRepository.findAll().stream()
-                        .anyMatch(de -> de.getDatasetId() == null);
-                if (needFix) {
-                    log.info("为现有数据元补充数据集...");
-                    for (DataElement de : dataElementRepository.findAll()) {
-                        if (de.getDatasetId() == null) {
-                            de.setDatasetId(generalSet.getId());
-                            dataElementRepository.save(de);
-                        }
-                    }
-                }
-            }
-            log.info("数据元已存在，跳过");
-            return;
-        }
         if (generalSet == null) {
             log.warn("通用数据集不存在，跳过数据元初始化");
             return;
         }
         Long datasetId = generalSet.getId();
+        // 为现有数据元补充 datasetId
+        boolean needFix = dataElementRepository.findAll().stream()
+                .anyMatch(de -> de.getDatasetId() == null);
+        if (needFix) {
+            log.info("为现有数据元补充数据集...");
+            for (DataElement de : dataElementRepository.findAll()) {
+                if (de.getDatasetId() == null) {
+                    de.setDatasetId(generalSet.getId());
+                    dataElementRepository.save(de);
+                }
+            }
+        }
+        // 基础数据元（幂等创建）
         saveDataElement("PATIENT_AGE", "患者年龄", DataType.NUMERIC, null, "患者年龄，单位为岁", datasetId);
         saveDataElement("PATIENT_GENDER", "患者性别", DataType.DICTIONARY, "GENDER", null, datasetId);
         saveDataElement("DIAGNOSIS_CODE", "诊断编码", DataType.DICTIONARY_SET, "ICD10", null, datasetId);
@@ -400,9 +436,30 @@ public class DataInitializer implements CommandLineRunner {
         saveDataElement("POSITIVE_EXAMS", "阳性检查", DataType.STRING_LIST, null, "NLP提取的阳性检查列表", datasetId);
         saveDataElement("POSITIVE_SURGERIES", "阳性手术", DataType.STRING_LIST, null, "NLP提取的阳性手术列表", datasetId);
         saveDataElement("POSITIVE_DISEASES", "阳性疾病", DataType.STRING_LIST, null, "NLP提取的阳性疾病列表", datasetId);
+
+        // 适配器字段数据元（与 HIS 适配器返回字段名对应，通过 camelName 映射）
+        saveDataElement("CHIEF_COMPLAINT", "主诉", DataType.STRING, null, "患者主诉内容", datasetId, "chiefComplaint");
+        saveDataElement("PRESENT_ILLNESS", "现病史", DataType.STRING, null, "现病史内容", datasetId, "presentIllnessHistory");
+        saveDataElement("PHYSICAL_EXAM", "体格检查", DataType.STRING, null, "体格检查内容", datasetId, "physicalExamination");
+        saveDataElement("AUXILIARY_EXAM", "辅助检查", DataType.STRING, null, "辅助检查内容", datasetId, "auxiliaryExamination");
+        saveDataElement("DIAGNOSIS", "诊断", DataType.STRING, null, "诊断内容", datasetId, "diagnosis");
+        saveDataElement("FIRST_COURSE", "首次病程", DataType.STRING, null, "首次病程记录", datasetId, "firstCourseRecord");
+        saveDataElement("DAILY_COURSE", "日常病程", DataType.STRING, null, "日常病程记录", datasetId, "dailyCourseRecord");
+        saveDataElement("PAST_HISTORY", "既往史", DataType.STRING, null, "既往史内容", datasetId, "pastHistory");
+        saveDataElement("ADMISSION_TIME", "入院时间", DataType.STRING, null, "入院时间，格式 yyyy-MM-dd HH:mm:ss", datasetId, "admissionTime");
+        saveDataElement("MEDICAL_HISTORY_TIME", "病史采集时间", DataType.STRING, null, "病史采集时间，格式 yyyy-MM-dd HH:mm:ss", datasetId, "medicalHistoryTime");
+        saveDataElement("PULSE", "脉搏", DataType.NUMERIC, null, "脉搏次数/分", datasetId, "pulse");
+        saveDataElement("HEART_RATE", "心率", DataType.NUMERIC, null, "心率次数/分", datasetId, "heartRate");
     }
 
     private void saveDataElement(String code, String name, DataType dataType, String dictCode, String description, Long datasetId) {
+        saveDataElement(code, name, dataType, dictCode, description, datasetId, null);
+    }
+
+    private void saveDataElement(String code, String name, DataType dataType, String dictCode, String description, Long datasetId, String camelName) {
+        if (dataElementRepository.findByCode(code).isPresent()) {
+            return;
+        }
         DataElement de = new DataElement();
         de.setCode(code);
         de.setName(name);
@@ -410,26 +467,28 @@ public class DataInitializer implements CommandLineRunner {
         de.setDictCode(dictCode);
         de.setDescription(description);
         de.setDatasetId(datasetId);
+        de.setCamelName(camelName);
         dataElementRepository.save(de);
+        log.info("创建数据元: {} (camelName={})", code, camelName);
     }
 
     private void initRuleTypes() {
-        if (ruleTypeRepository.count() > 0) {
-            log.info("规则类型已存在，跳过");
-            return;
-        }
-        saveRuleType("QUALITY_CTRL", "合理性质控", "医疗合理性质控规则");
-        saveRuleType("MEDICAL_RECORD_QC", "病历质控", "病历内涵质控规则");
-        saveRuleType("MEDICARE_AUDIT", "医保稽核", "医保审核规则");
-        saveRuleType("NURSING_DECISION", "护理决策", "护理计划与评估规则");
-        saveRuleType("VTE_PREVENTION", "VTE防治", "静脉血栓栓塞防治规则");
+        saveRuleType("MEDICAL_RECORD_QC", "病历质控", "病历内涵质控规则", 1);
+        saveRuleType("QUALITY_CTRL", "合理性质控", "医疗合理性质控规则", 2);
+        saveRuleType("MEDICARE_AUDIT", "医保稽核", "医保审核规则", 3);
+        saveRuleType("NURSING_DECISION", "护理决策", "护理计划与评估规则", 4);
+        saveRuleType("VTE_PREVENTION", "VTE防治", "静脉血栓栓塞防治规则", 5);
     }
 
-    private void saveRuleType(String code, String name, String description) {
-        RuleType rt = new RuleType();
-        rt.setCode(code);
+    private void saveRuleType(String code, String name, String description, int sortOrder) {
+        RuleType rt = ruleTypeRepository.findByCode(code).orElse(null);
+        if (rt == null) {
+            rt = new RuleType();
+            rt.setCode(code);
+        }
         rt.setName(name);
         rt.setDescription(description);
+        rt.setSortOrder(sortOrder);
         ruleTypeRepository.save(rt);
     }
 
@@ -456,28 +515,18 @@ public class DataInitializer implements CommandLineRunner {
     }
 
     private void initConditionModels() {
-        if (conditionModelRepository.count() > 0) {
-            boolean needFixCategory = conditionModelRepository.findAll().stream()
-                    .anyMatch(cm -> cm.getCategoryId() == null);
-            if (needFixCategory) {
-                log.info("条件缺少分类，开始修复...");
-                fixConditionModelCategories();
-            } else {
-                log.info("条件已存在，跳过");
-            }
-            return;
+        boolean needFixCategory = conditionModelRepository.findAll().stream()
+                .anyMatch(cm -> cm.getCategoryId() == null);
+        if (needFixCategory) {
+            log.info("条件缺少分类，开始修复...");
+            fixConditionModelCategories();
         }
 
-        ConditionModelCategory patientCat = categoryRepository.findByCode("PATIENT_INFO")
-                .orElseThrow(() -> new RuntimeException("分类不存在"));
-        ConditionModelCategory ordersCat = categoryRepository.findByCode("ORDERS")
-                .orElseThrow(() -> new RuntimeException("分类不存在"));
-        ConditionModelCategory diagnosisCat = categoryRepository.findByCode("DIAGNOSIS")
-                .orElseThrow(() -> new RuntimeException("分类不存在"));
-        ConditionModelCategory emrCat = categoryRepository.findByCode("MEDICAL_RECORD")
-                .orElseThrow(() -> new RuntimeException("分类不存在"));
-        ConditionModelCategory vitalCat = categoryRepository.findByCode("VITAL_SIGNS")
-                .orElseThrow(() -> new RuntimeException("分类不存在"));
+        ConditionModelCategory patientCat = categoryRepository.findByCode("PATIENT_INFO").orElse(null);
+        ConditionModelCategory ordersCat = categoryRepository.findByCode("ORDERS").orElse(null);
+        ConditionModelCategory diagnosisCat = categoryRepository.findByCode("DIAGNOSIS").orElse(null);
+        ConditionModelCategory emrCat = categoryRepository.findByCode("MEDICAL_RECORD").orElse(null);
+        ConditionModelCategory vitalCat = categoryRepository.findByCode("VITAL_SIGNS").orElse(null);
 
         DataElement age = findDe("PATIENT_AGE");
         DataElement gender = findDe("PATIENT_GENDER");
@@ -491,20 +540,73 @@ public class DataInitializer implements CommandLineRunner {
         DataElement posSigns = findDe("POSITIVE_SIGNS");
         DataElement negSigns = findDe("NEGATIVE_SIGNS");
 
-        if (age != null) saveConditionModel(age.getId(), patientCat.getId(), Arrays.asList("==", "!=", ">", "<"), ValueSource.PARAM, NodeUsage.CONDITION);
-        if (gender != null) saveConditionModel(gender.getId(), patientCat.getId(), Collections.singletonList("=="), ValueSource.PARAM, NodeUsage.CONDITION);
-        if (diagnosis != null) saveConditionModel(diagnosis.getId(), diagnosisCat.getId(), Collections.singletonList("IN_SET"), ValueSource.PARAM, NodeUsage.CONDITION);
-        if (drug != null) saveConditionModel(drug.getId(), ordersCat.getId(), Collections.singletonList("IN_SET"), ValueSource.PARAM, NodeUsage.CONDITION);
+        if (age != null) saveConditionModel(age.getId(), patientCat != null ? patientCat.getId() : null, Arrays.asList("==", "!=", ">", "<"), ValueSource.PARAM, NodeUsage.CONDITION);
+        if (gender != null) saveConditionModel(gender.getId(), patientCat != null ? patientCat.getId() : null, Collections.singletonList("=="), ValueSource.PARAM, NodeUsage.CONDITION);
+        if (diagnosis != null) saveConditionModel(diagnosis.getId(), diagnosisCat != null ? diagnosisCat.getId() : null, Collections.singletonList("IN_SET"), ValueSource.PARAM, NodeUsage.CONDITION);
+        if (drug != null) saveConditionModel(drug.getId(), ordersCat != null ? ordersCat.getId() : null, Collections.singletonList("IN_SET"), ValueSource.PARAM, NodeUsage.CONDITION);
         saveConditionModel(null, null, Collections.singletonList("=="), ValueSource.PARAM, NodeUsage.RESULT);
-        if (emr != null) saveConditionModel(emr.getId(), emrCat.getId(), Arrays.asList("==", "contains", "regex_match", "regexMatch", "existenceConflict", "whitelistMatch", "dictMatch", "medicalNer", "negationCheck", "tokenSimilarity", "allNegated"), ValueSource.ADAPTER, NodeUsage.CONDITION);
-        if (bp != null) saveConditionModel(bp.getId(), vitalCat.getId(), Arrays.asList("==", "!=", ">", "<"), ValueSource.PARAM, NodeUsage.BOTH);
-        if (temp != null) saveConditionModel(temp.getId(), vitalCat.getId(), Arrays.asList("==", "!=", ">", "<"), ValueSource.PARAM, NodeUsage.BOTH);
+        if (emr != null) saveConditionModel(emr.getId(), emrCat != null ? emrCat.getId() : null, Arrays.asList("==", "contains", "regex_match", "regexMatch", "existenceConflict", "whitelistMatch", "dictMatch", "medicalNer", "negationCheck", "tokenSimilarity", "allNegated"), ValueSource.ADAPTER, NodeUsage.CONDITION);
+        if (bp != null) saveConditionModel(bp.getId(), vitalCat != null ? vitalCat.getId() : null, Arrays.asList("==", "!=", ">", "<"), ValueSource.PARAM, NodeUsage.BOTH);
+        if (temp != null) saveConditionModel(temp.getId(), vitalCat != null ? vitalCat.getId() : null, Arrays.asList("==", "!=", ">", "<"), ValueSource.PARAM, NodeUsage.BOTH);
         // NLP 衍生数据元的条件模型
-        if (posSymptoms != null) saveConditionModel(posSymptoms.getId(), emrCat.getId(), Arrays.asList("contains", "arrayLength", "arrayIntersect"), ValueSource.ADAPTER, NodeUsage.CONDITION);
-        if (negSymptoms != null) saveConditionModel(negSymptoms.getId(), emrCat.getId(), Arrays.asList("contains", "arrayLength", "arrayIntersect"), ValueSource.ADAPTER, NodeUsage.CONDITION);
-        if (posSigns != null) saveConditionModel(posSigns.getId(), emrCat.getId(), Arrays.asList("contains", "arrayLength", "arrayIntersect"), ValueSource.ADAPTER, NodeUsage.CONDITION);
-        if (negSigns != null) saveConditionModel(negSigns.getId(), emrCat.getId(), Arrays.asList("contains", "arrayLength", "arrayIntersect"), ValueSource.ADAPTER, NodeUsage.CONDITION);
+        if (posSymptoms != null) saveConditionModel(posSymptoms.getId(), emrCat != null ? emrCat.getId() : null, Arrays.asList("contains", "arrayLength", "arrayIntersect"), ValueSource.ADAPTER, NodeUsage.CONDITION);
+        if (negSymptoms != null) saveConditionModel(negSymptoms.getId(), emrCat != null ? emrCat.getId() : null, Arrays.asList("contains", "arrayLength", "arrayIntersect"), ValueSource.ADAPTER, NodeUsage.CONDITION);
+        if (posSigns != null) saveConditionModel(posSigns.getId(), emrCat != null ? emrCat.getId() : null, Arrays.asList("contains", "arrayLength", "arrayIntersect"), ValueSource.ADAPTER, NodeUsage.CONDITION);
+        if (negSigns != null) saveConditionModel(negSigns.getId(), emrCat != null ? emrCat.getId() : null, Arrays.asList("contains", "arrayLength", "arrayIntersect"), ValueSource.ADAPTER, NodeUsage.CONDITION);
         saveConditionModel(null, null, Collections.singletonList("=="), ValueSource.PARAM, NodeUsage.RESULT);
+
+        // 适配器字段条件模型（病历文书相关）
+        initAdapterConditionModels(emrCat, vitalCat, patientCat);
+    }
+
+    private void initAdapterConditionModels(ConditionModelCategory emrCat, ConditionModelCategory vitalCat, ConditionModelCategory patientCat) {
+        DataElement chiefComplaint = findDe("CHIEF_COMPLAINT");
+        DataElement presentIllness = findDe("PRESENT_ILLNESS");
+        DataElement physicalExam = findDe("PHYSICAL_EXAM");
+        DataElement auxiliaryExam = findDe("AUXILIARY_EXAM");
+        DataElement diagnosisContent = findDe("DIAGNOSIS");
+        DataElement firstCourse = findDe("FIRST_COURSE");
+        DataElement dailyCourse = findDe("DAILY_COURSE");
+        DataElement pastHistory = findDe("PAST_HISTORY");
+        DataElement admissionTime = findDe("ADMISSION_TIME");
+        DataElement medicalHistoryTime = findDe("MEDICAL_HISTORY_TIME");
+        DataElement pulse = findDe("PULSE");
+        DataElement heartRate = findDe("HEART_RATE");
+
+        // 主诉：正则匹配、medicalNer
+        if (chiefComplaint != null) saveConditionModel(chiefComplaint.getId(), emrCat != null ? emrCat.getId() : null,
+                Arrays.asList("regex_match", "medicalNer", "lengthCheck", "isBlank"), ValueSource.ADAPTER, NodeUsage.CONDITION);
+        // 现病史：正则匹配、medicalNer、isBlank
+        if (presentIllness != null) saveConditionModel(presentIllness.getId(), emrCat != null ? emrCat.getId() : null,
+                Arrays.asList("regex_match", "medicalNer", "isBlank", "lengthCheck", "similarity"), ValueSource.ADAPTER, NodeUsage.CONDITION);
+        // 体格检查：medicalNer、regex_match、fieldCompare（脉搏vs心率）
+        if (physicalExam != null) saveConditionModel(physicalExam.getId(), emrCat != null ? emrCat.getId() : null,
+                Arrays.asList("regex_match", "medicalNer", "isBlank", "similarity"), ValueSource.ADAPTER, NodeUsage.CONDITION);
+        // 辅助检查：regex_match、similarity
+        if (auxiliaryExam != null) saveConditionModel(auxiliaryExam.getId(), emrCat != null ? emrCat.getId() : null,
+                Arrays.asList("regex_match", "similarity", "isBlank"), ValueSource.ADAPTER, NodeUsage.CONDITION);
+        // 诊断：regex_match、dictMatch
+        if (diagnosisContent != null) saveConditionModel(diagnosisContent.getId(), emrCat != null ? emrCat.getId() : null,
+                Arrays.asList("regex_match", "dictMatch", "isBlank"), ValueSource.ADAPTER, NodeUsage.CONDITION);
+        // 首次病程：similarity、regex_match
+        if (firstCourse != null) saveConditionModel(firstCourse.getId(), emrCat != null ? emrCat.getId() : null,
+                Arrays.asList("similarity", "regex_match", "isBlank", "lengthCheck"), ValueSource.ADAPTER, NodeUsage.CONDITION);
+        // 日常病程：similarity
+        if (dailyCourse != null) saveConditionModel(dailyCourse.getId(), emrCat != null ? emrCat.getId() : null,
+                Arrays.asList("similarity", "regex_match", "isBlank"), ValueSource.ADAPTER, NodeUsage.CONDITION);
+        // 既往史：existenceConflict
+        if (pastHistory != null) saveConditionModel(pastHistory.getId(), emrCat != null ? emrCat.getId() : null,
+                Arrays.asList("existenceConflict", "regex_match", "isBlank"), ValueSource.ADAPTER, NodeUsage.CONDITION);
+        // 入院时间 / 病史采集时间：fieldCompare（双字段时间差）
+        if (admissionTime != null) saveConditionModel(admissionTime.getId(), patientCat != null ? patientCat.getId() : null,
+                Arrays.asList("fieldCompare", "timeCheck"), ValueSource.ADAPTER, NodeUsage.CONDITION);
+        if (medicalHistoryTime != null) saveConditionModel(medicalHistoryTime.getId(), patientCat != null ? patientCat.getId() : null,
+                Arrays.asList("fieldCompare", "timeCheck"), ValueSource.ADAPTER, NodeUsage.CONDITION);
+        // 脉搏 / 心率：fieldCompare（双字段数值比对）
+        if (pulse != null) saveConditionModel(pulse.getId(), vitalCat != null ? vitalCat.getId() : null,
+                Arrays.asList("fieldCompare", "dataCheck"), ValueSource.ADAPTER, NodeUsage.CONDITION);
+        if (heartRate != null) saveConditionModel(heartRate.getId(), vitalCat != null ? vitalCat.getId() : null,
+                Arrays.asList("fieldCompare", "dataCheck"), ValueSource.ADAPTER, NodeUsage.CONDITION);
     }
 
     private void fixConditionModelCategories() {
@@ -546,30 +648,60 @@ public class DataInitializer implements CommandLineRunner {
 
     private void saveConditionModel(Long dataElementId, Long categoryId, java.util.List<String> operators,
                                      ValueSource valueSource, NodeUsage nodeUsage) {
+        String code;
+        String name;
+        DataType dataType;
+
+        if (dataElementId != null) {
+            DataElement de = dataElementRepository.findById(dataElementId)
+                    .orElseThrow(() -> new RuntimeException("数据元不存在: " + dataElementId));
+            // 优先使用驼峰名作为运行时字段名，兼容导入的数据元
+            code = (de.getCamelName() != null && !de.getCamelName().isEmpty())
+                    ? de.getCamelName() : de.getCode();
+            name = de.getName();
+            dataType = de.getDataType();
+        } else {
+            // 结果节点，没有关联数据元，跳过（结果节点不需要条件模型）
+            return;
+        }
+
+        // 幂等：按 code 检查是否已存在
+        List<ConditionModel> allModels = conditionModelRepository.findAll();
+        for (ConditionModel existing : allModels) {
+            if (code.equals(existing.getCode())) {
+                // 已存在，更新操作符和分类（如果变更）
+                boolean changed = false;
+                if (categoryId != null && !categoryId.equals(existing.getCategoryId())) {
+                    existing.setCategoryId(categoryId);
+                    changed = true;
+                }
+                if (operators != null && !operators.equals(existing.getOperators())) {
+                    existing.setOperators(new ArrayList<>(operators));
+                    changed = true;
+                }
+                if (valueSource != null && !valueSource.equals(existing.getValueSource())) {
+                    existing.setValueSource(valueSource);
+                    changed = true;
+                }
+                if (changed) {
+                    conditionModelRepository.save(existing);
+                    log.info("更新条件模型: {} (分类={}, 操作符={})", code, categoryId, operators);
+                }
+                return;
+            }
+        }
+
         ConditionModel model = new ConditionModel();
         model.setDataElementId(dataElementId);
         model.setCategoryId(categoryId);
         model.setOperators(operators);
         model.setValueSource(valueSource);
         model.setNodeUsage(nodeUsage);
-
-        if (dataElementId != null) {
-            DataElement de = dataElementRepository.findById(dataElementId)
-                    .orElseThrow(() -> new RuntimeException("数据元不存在: " + dataElementId));
-            // 优先使用驼峰名作为运行时字段名，兼容导入的数据元
-            String fieldCode = (de.getCamelName() != null && !de.getCamelName().isEmpty())
-                    ? de.getCamelName() : de.getCode();
-            model.setCode(fieldCode);
-            model.setName(de.getName());
-            model.setDataType(de.getDataType());
-        } else {
-            // 结果节点，没有关联数据元，使用默认编码
-            model.setCode("RESULT_" + System.currentTimeMillis());
-            model.setName("结果条件");
-            model.setDataType(DataType.DICTIONARY);
-        }
-
+        model.setCode(code);
+        model.setName(name);
+        model.setDataType(dataType);
         conditionModelRepository.save(model);
+        log.info("创建条件模型: {} (分类={}, 操作符={})", code, categoryId, operators);
     }
 
     private void syncResultCategory() {
@@ -665,5 +797,44 @@ public class DataInitializer implements CommandLineRunner {
             conditionModelRepository.save(existingModel);
             log.info("更新条件模型 {} 的分类为二级分类: {}", fieldCode, subCat.getId());
         }
+    }
+
+    private void initResultConfigs() {
+        // 病历质控 - 缺陷提示（幂等创建）
+        saveResultConfig("QC_DEFECT", "一般缺陷", "主诉缺少持续时间描述", 1,
+                "主诉中未描述症状持续时间，请补充");
+        saveResultConfig("QC_DEFECT", "一般缺陷", "缺现病史", 1,
+                "现病史内容为空，请补充完整");
+        saveResultConfig("QC_DEFECT", "一般缺陷", "体格检查脉搏与心率矛盾", 2,
+                "体格检查中脉搏与心率数值不一致，请核对");
+        saveResultConfig("QC_DEFECT", "一般缺陷", "病程记录雷同", 1,
+                "两次以上病程记录相似度过高，请避免拷贝");
+        saveResultConfig("QC_DEFECT", "一般缺陷", "入院时间与病史采集时间差>2小时", 2,
+                "入院时间与病史采集时间差超过2小时，请及时完成病史采集");
+        // 病历质控 - 一票否决
+        saveResultConfig("QC_VETO", "一票否决", "缺诊断", 10,
+                "诊断内容为空，为严重缺陷");
+        // 推荐类型
+        saveResultConfig("RECOMMEND", "推荐类型", "诊断推荐", 0,
+                "建议完善相关检查以明确诊断");
+        log.info("结果配置检查完成");
+    }
+
+    private void saveResultConfig(String resultType, String resultName, String content, int priority, String description) {
+        // 幂等：按 content 作为唯一标识检查
+        List<ResultConfig> all = resultConfigRepository.findAll();
+        for (ResultConfig existing : all) {
+            if (content.equals(existing.getContent())) {
+                return; // 已存在，跳过
+            }
+        }
+        ResultConfig rc = new ResultConfig();
+        rc.setResultType(resultType);
+        rc.setResultName(resultName);
+        rc.setContent(content);
+        rc.setPriority(priority);
+        rc.setDescription(description);
+        resultConfigRepository.save(rc);
+        log.info("创建结果配置: {}", content);
     }
 }

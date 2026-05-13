@@ -18,7 +18,7 @@ public class RuleTypeService {
     private final RuleRepository ruleRepository;
 
     public List<RuleType> findAll() {
-        return ruleTypeRepository.findAll();
+        return ruleTypeRepository.findAllByOrderBySortOrderAsc();
     }
 
     public RuleType findById(Long id) {

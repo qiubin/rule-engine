@@ -2,66 +2,51 @@ package com.ruleengine.drools.adapter;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.ruleengine.domain.AdapterConfig;
+import com.ruleengine.service.AdapterConfigService;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 import org.springframework.web.client.RestTemplate;
 
 import javax.annotation.PostConstruct;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * HIS 系统 REST 客户端
  * 封装认证、超时、重试、字段映射等逻辑。
+ * 配置从数据库 adapter_config 表读取，支持运行时修改。
  */
 @Slf4j
 @Component
 public class HisClient {
 
-    @Value("${his.enabled:false}")
-    private boolean enabled;
-
-    @Value("${his.base-url:}")
-    private String baseUrl;
-
-    @Value("${his.auth-type:none}")
-    private String authType;
-
-    @Value("${his.auth-token:}")
-    private String authToken;
-
-    @Value("${his.api-key:}")
-    private String apiKey;
-
-    @Value("${his.connect-timeout-ms:5000}")
-    private int connectTimeoutMs;
-
-    @Value("${his.read-timeout-ms:10000}")
-    private int readTimeoutMs;
-
-    @Value("${his.adapter-path:/api/v1/adapter/emr}")
-    private String adapterPath;
-
+    private final AdapterConfigService adapterConfigService;
     private final RestTemplate restTemplate = new RestTemplate();
     private final ObjectMapper objectMapper = new ObjectMapper();
 
+    public HisClient(AdapterConfigService adapterConfigService) {
+        this.adapterConfigService = adapterConfigService;
+    }
+
     @PostConstruct
     public void init() {
-        if (enabled) {
-            log.info("HIS 客户端已启用，baseUrl={}", baseUrl);
+        AdapterConfig cfg = getConfig();
+        if (Boolean.TRUE.equals(cfg.getEnabled()) && StringUtils.hasText(cfg.getBaseUrl())) {
+            log.info("HIS 客户端已启用，baseUrl={}", cfg.getBaseUrl());
         } else {
             log.info("HIS 客户端未启用，规则执行将仅依赖传入参数");
         }
     }
 
+    private AdapterConfig getConfig() {
+        return adapterConfigService.findFirst();
+    }
+
     public boolean isEnabled() {
-        return enabled && StringUtils.hasText(baseUrl);
+        AdapterConfig cfg = getConfig();
+        return Boolean.TRUE.equals(cfg.getEnabled()) && StringUtils.hasText(cfg.getBaseUrl());
     }
 
     /**
@@ -69,7 +54,7 @@ public class HisClient {
      */
     @SuppressWarnings("unchecked")
     public Map<String, Object> getCurrentAdmission(String patientId) {
-        String url = baseUrl + "/v1/patient/" + patientId + "/current-admission";
+        String url = getConfig().getBaseUrl() + "/v1/patient/" + patientId + "/current-admission";
         return getForMap(url, "当前住院信息");
     }
 
@@ -78,7 +63,7 @@ public class HisClient {
      */
     @SuppressWarnings("unchecked")
     public Map<String, Object> getEmrSections(String admissionId) {
-        String url = baseUrl + "/v1/admission/" + admissionId + "/emr-sections";
+        String url = getConfig().getBaseUrl() + "/v1/admission/" + admissionId + "/emr-sections";
         return getForMap(url, "病历章节");
     }
 
@@ -87,7 +72,7 @@ public class HisClient {
      */
     @SuppressWarnings("unchecked")
     public List<Map<String, Object>> getOrders(String admissionId, String startTime, String endTime) {
-        StringBuilder url = new StringBuilder(baseUrl + "/v1/admission/" + admissionId + "/orders");
+        StringBuilder url = new StringBuilder(getConfig().getBaseUrl() + "/v1/admission/" + admissionId + "/orders");
         boolean hasParam = false;
         if (StringUtils.hasText(startTime)) {
             url.append(hasParam ? "&" : "?").append("startTime=").append(startTime);
@@ -107,7 +92,7 @@ public class HisClient {
      * 获取抢救记录
      */
     public boolean hasRescueRecord(String admissionId) {
-        String url = baseUrl + "/v1/admission/" + admissionId + "/rescue-records";
+        String url = getConfig().getBaseUrl() + "/v1/admission/" + admissionId + "/rescue-records";
         Map<String, Object> result = getForMap(url, "抢救记录");
         if (result != null) {
             Object hasRescue = result.get("hasRescue");
@@ -121,7 +106,7 @@ public class HisClient {
      */
     @SuppressWarnings("unchecked")
     public Map<String, Object> getPreviousAdmission(String patientId, String currentAdmissionId) {
-        String url = baseUrl + "/v1/patient/" + patientId + "/previous-admission";
+        String url = getConfig().getBaseUrl() + "/v1/patient/" + patientId + "/previous-admission";
         if (StringUtils.hasText(currentAdmissionId)) {
             url += "?currentAdmissionId=" + currentAdmissionId;
         }
@@ -133,7 +118,7 @@ public class HisClient {
      */
     @SuppressWarnings("unchecked")
     public List<Map<String, Object>> getCourseRecords(String admissionId) {
-        String url = baseUrl + "/v1/admission/" + admissionId + "/course-records";
+        String url = getConfig().getBaseUrl() + "/v1/admission/" + admissionId + "/course-records";
         Map<String, Object> result = getForMap(url, "病程记录");
         if (result != null && result.get("courseRecords") instanceof List) {
             return (List<Map<String, Object>>) result.get("courseRecords");
@@ -172,14 +157,6 @@ public class HisClient {
 
     /**
      * 从适配器获取病历数据（POST 请求，datasetList 结构）。
-     *
-     * @param patientId       患者标识
-     * @param admissionId     住院号
-     * @param visitId         就诊号
-     * @param medicalRecordNo 病历号
-     * @param eventNo         事件号
-     * @param identityCardNo  身份证号
-     * @return 平铺后的字段 Map
      */
     @SuppressWarnings("unchecked")
     public Map<String, Object> fetchEmrDataFromAdapter(String patientId, String admissionId,
@@ -189,7 +166,8 @@ public class HisClient {
             return Collections.emptyMap();
         }
 
-        String url = baseUrl + adapterPath;
+        AdapterConfig cfg = getConfig();
+        String url = cfg.getBaseUrl() + cfg.getAdapterPath();
 
         Map<String, Object> capability = new HashMap<>();
         Map<String, Object> selection = new HashMap<>();
@@ -251,7 +229,6 @@ public class HisClient {
 
     /**
      * 将适配器返回的 datasetList 结构平铺为单层 Map。
-     * datasetList[0].{datasetKey}[0] 的字段直接提取到顶层。
      */
     @SuppressWarnings("unchecked")
     private Map<String, Object> flattenDatasetList(Map<String, Object> responseData) {
@@ -290,13 +267,15 @@ public class HisClient {
     }
 
     private HttpHeaders buildHeaders() {
+        AdapterConfig cfg = getConfig();
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
         headers.setAccept(Collections.singletonList(MediaType.APPLICATION_JSON));
-        if ("bearer".equalsIgnoreCase(authType) && StringUtils.hasText(authToken)) {
-            headers.setBearerAuth(authToken);
-        } else if ("apikey".equalsIgnoreCase(authType) && StringUtils.hasText(apiKey)) {
-            headers.set("X-API-Key", apiKey);
+        String authType = cfg.getAuthType();
+        if ("bearer".equalsIgnoreCase(authType) && StringUtils.hasText(cfg.getAuthToken())) {
+            headers.setBearerAuth(cfg.getAuthToken());
+        } else if ("apikey".equalsIgnoreCase(authType) && StringUtils.hasText(cfg.getApiKey())) {
+            headers.set("X-API-Key", cfg.getApiKey());
         }
         return headers;
     }

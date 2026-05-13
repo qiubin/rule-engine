@@ -73,11 +73,41 @@ function FlowCanvas() {
       const res = await axios.get(`${API_BASE}/rules/${ruleId}`)
       const rule = res.data
       setCurrentRule(rule)
+      let loadedNodes = []
+      let loadedEdges = []
       if (rule.canvasData) {
         const canvas = JSON.parse(rule.canvasData)
-        if (canvas.nodes) setNodes(canvas.nodes)
-        if (canvas.edges) setEdges(canvas.edges)
+        if (canvas.nodes) loadedNodes = canvas.nodes
+        if (canvas.edges) loadedEdges = canvas.edges
       }
+      // 确保画布始终有开始和结束节点
+      const hasStart = loadedNodes.some(n => n.id === 'start')
+      const hasEnd = loadedNodes.some(n => n.id === 'end')
+      if (!hasStart) {
+        loadedNodes.unshift({ id: 'start', type: 'start', position: { x: 100, y: 200 }, data: { label: '开始' } })
+      }
+      if (!hasEnd) {
+        loadedNodes.push({ id: 'end', type: 'end', position: { x: 800, y: 200 }, data: { label: '结束' } })
+      }
+      // 自动添加缺失的默认连线：start → 第一个条件节点，结果节点 → end
+      const conditionNodes = loadedNodes.filter(n => n.type === 'condition')
+      const resultNodes = loadedNodes.filter(n => n.type === 'result')
+      if (conditionNodes.length > 0 && !loadedEdges.some(e => e.source === 'start')) {
+        loadedEdges.push({
+          id: 'e_start_first', source: 'start', target: conditionNodes[0].id,
+          type: 'smoothstep', animated: true
+        })
+      }
+      resultNodes.forEach((rn, idx) => {
+        if (!loadedEdges.some(e => e.source === rn.id)) {
+          loadedEdges.push({
+            id: `e_result_${rn.id}_end`, source: rn.id, target: 'end',
+            type: 'smoothstep', animated: true
+          })
+        }
+      })
+      setNodes(loadedNodes)
+      setEdges(loadedEdges)
     } catch (e) {
       message.error('加载规则失败')
     }
@@ -184,6 +214,17 @@ function FlowCanvas() {
         if (field && !seen.has(field)) {
           seen.add(field)
           fields.push({ field, dataType: cfg.dataType, label: node.data.label || field })
+        }
+        // fieldCompare 需要额外输入字段A和字段B
+        if (cfg.operator === 'fieldCompare') {
+          if (cfg.value && !seen.has(cfg.value)) {
+            seen.add(cfg.value)
+            fields.push({ field: cfg.value, dataType: cfg.dataType, label: cfg.value + ' (字段A)' })
+          }
+          if (cfg.extraValue1 && !seen.has(cfg.extraValue1)) {
+            seen.add(cfg.extraValue1)
+            fields.push({ field: cfg.extraValue1, dataType: cfg.dataType, label: cfg.extraValue1 + ' (字段B)' })
+          }
         }
       }
     })
@@ -321,7 +362,10 @@ function FlowCanvas() {
             <Input placeholder="如：AGE_CHECK_001" />
           </Form.Item>
           <Form.Item name="name" label="规则名称" rules={[{ required: true }]}>
-            <Input placeholder="如：年龄合理性检查" />
+            <Input placeholder="如：主诉持续时间" />
+          </Form.Item>
+          <Form.Item name="remark" label="备注">
+            <Input placeholder="实现方法关键词 + 对应计算符 + 配置要点" />
           </Form.Item>
           <Form.Item name="ruleTypeId" label="规则类型" rules={[{ required: true, message: '必须选择规则类型' }]}>
             <Select placeholder="选择规则类型">

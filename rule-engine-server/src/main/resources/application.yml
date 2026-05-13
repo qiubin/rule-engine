@@ -5,9 +5,9 @@ spring:
   application:
     name: rule-engine-server
   datasource:
-    url: jdbc:mysql://${MYSQL_HOST:localhost}:${MYSQL_PORT:3306}/${MYSQL_DB:ruleengine}?useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&characterEncoding=utf8
+    url: jdbc:mysql://${MYSQL_HOST:192.168.2.166}:${MYSQL_PORT:3306}/${MYSQL_DB:ruleengine}?useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&characterEncoding=utf8
     username: ${MYSQL_USER:root}
-    password: ${MYSQL_PASSWORD:qiubin78}
+    password: ${MYSQL_PASSWORD:zoeddc@2017}
     driver-class-name: com.mysql.cj.jdbc.Driver
   jpa:
     hibernate:

@@ -68,6 +68,7 @@ public class RuleService {
         }
         validateRuleType(rule);
         existing.setName(rule.getName());
+        existing.setRemark(rule.getRemark());
         existing.setRuleTypeId(rule.getRuleTypeId());
         return ruleRepository.save(existing);
     }
@@ -76,9 +77,6 @@ public class RuleService {
     @Transactional
     public Rule saveCanvas(Long id, String canvasData) {
         Rule rule = findById(id);
-        if (rule.getStatus() == RuleStatus.PUBLISHED) {
-            throw new RuntimeException("已发布的规则不能修改画布");
-        }
         validateRuleType(rule);
         rule.setCanvasData(canvasData);
 

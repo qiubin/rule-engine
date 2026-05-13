@@ -178,17 +178,18 @@ export default function RuleTypeMgr() {
 
   const ruleColumns = [
     { title: 'ID', dataIndex: 'id', width: 60 },
-    { title: '编码', dataIndex: 'code' },
-    { title: '名称', dataIndex: 'name' },
-    { title: '版本', dataIndex: 'version', width: 80 },
-    { title: '状态', dataIndex: 'status', width: 100 },
+    { title: '编码', dataIndex: 'code', width: 160 },
+    { title: '名称', dataIndex: 'name', width: 160, ellipsis: true },
+    { title: '备注', dataIndex: 'remark', width: 220, ellipsis: true, render: v => v || '-' },
+    { title: '版本', dataIndex: 'version', width: 70 },
+    { title: '状态', dataIndex: 'status', width: 80 },
     {
-      title: '操作', width: 320,
+      title: '操作', width: 300,
       render: (_, record) => (
         <Space size={0} key={'ops-' + record.id}>
           <Button type="link" size="small" icon={<PartitionOutlined />} onClick={() => handleEditRule(record)}>编辑画布</Button>
-          <Button type="link" size="small" icon={<FileTextOutlined />} onClick={() => openLogDrawer(record)}>执行日志</Button>
-          <Button type="link" size="small" icon={<HistoryOutlined />} onClick={() => openVersionModal(record)}>历史版本</Button>
+          <Button type="link" size="small" icon={<FileTextOutlined />} onClick={() => openLogDrawer(record)}>日志</Button>
+          <Button type="link" size="small" icon={<HistoryOutlined />} onClick={() => openVersionModal(record)}>历史</Button>
           <Button type="link" size="small" danger icon={<DeleteOutlined />} onClick={() => {
             if (window.confirm('确认删除规则 ' + record.name + '?')) {
               handleDeleteRule(record.id)

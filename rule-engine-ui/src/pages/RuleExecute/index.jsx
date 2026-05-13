@@ -80,6 +80,17 @@ export default function RuleExecute() {
             seen.add(field)
             fields.push({ field, dataType, label })
           }
+          // fieldCompare 需要额外输入字段A和字段B
+          if (cfg.operator === 'fieldCompare') {
+            if (cfg.value && !seen.has(cfg.value)) {
+              seen.add(cfg.value)
+              fields.push({ field: cfg.value, dataType, label: cfg.value + ' (字段A)' })
+            }
+            if (cfg.extraValue1 && !seen.has(cfg.extraValue1)) {
+              seen.add(cfg.extraValue1)
+              fields.push({ field: cfg.extraValue1, dataType, label: cfg.extraValue1 + ' (字段B)' })
+            }
+          }
         }
       })
       return fields

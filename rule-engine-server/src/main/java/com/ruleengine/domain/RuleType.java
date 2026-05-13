@@ -30,6 +30,9 @@ public class RuleType {
     @Column(name = "description", length = 512)
     private String description;
 
+    @Column(name = "sort_order")
+    private Integer sortOrder = 0;
+
     @Column(name = "status", length = 16)
     @Enumerated(EnumType.STRING)
     private RuleStatus status = RuleStatus.ENABLED;
