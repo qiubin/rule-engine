@@ -232,6 +232,11 @@ export default function RuleTypeMgr() {
                 <div>
                   <span style={{ fontWeight: 'bold', fontSize: 14 }}>{rt.name}</span>
                   <span style={{ fontSize: 12, color: '#999', marginLeft: 8 }}>{rt.code}</span>
+                  {rt.sortOrder != null && (
+                    <span style={{ fontSize: 11, color: '#1890ff', marginLeft: 8, background: '#e6f7ff', padding: '0 6px', borderRadius: 4 }}>
+                      排序:{rt.sortOrder}
+                    </span>
+                  )}
                 </div>
                 <div style={{ display: 'flex', gap: 4 }} onClick={e => e.stopPropagation()}>
                   <Button type="text" size="small" icon={<EditOutlined />}
@@ -295,6 +300,9 @@ export default function RuleTypeMgr() {
           </Form.Item>
           <Form.Item name="description" label="描述">
             <Input.TextArea rows={2} />
+          </Form.Item>
+          <Form.Item name="sortOrder" label="排序号" rules={[{ required: true }]} initialValue={0}>
+            <Input type="number" placeholder="数字越小越靠前" />
           </Form.Item>
         </Form>
       </Modal>

@@ -89,10 +89,14 @@ CREATE TABLE IF NOT EXISTS rule_type (
   code VARCHAR(64) NOT NULL UNIQUE,
   name VARCHAR(128) NOT NULL,
   description VARCHAR(512),
+  sort_order INT DEFAULT 0,
   status VARCHAR(16) DEFAULT 'ENABLED',
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
   updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- 兼容已有数据库：补充 sort_order 列
+ALTER TABLE rule_type ADD COLUMN IF NOT EXISTS sort_order INT DEFAULT 0;
 
 -- ============================================================
 -- 4. 规则主表（手动创建，避免 JPA CLOB 映射问题）

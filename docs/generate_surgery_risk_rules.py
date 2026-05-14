@@ -100,29 +100,33 @@ def get_field_for_condition(cat, content):
         return "drugNames"
     if cat == "过敏史" or cat == "个人史":
         return "pastHistory"
-    
+
     content_str = str(content) if content else ""
+
+    def find_field(field_map):
+        # 按关键词长度降序，避免短关键词误匹配（如 PT 匹配到 APTT）
+        for key, field in sorted(field_map.items(), key=lambda x: -len(x[0])):
+            if key in content_str:
+                return field
+        return None
+
     if cat == "检验细项":
-        for key, field in LAB_FIELD_MAP.items():
-            if key in content_str:
-                return field
-        return "labResultValue"
-    
+        field = find_field(LAB_FIELD_MAP)
+        return field if field else "labResultValue"
+
     if cat == "检查结果值":
-        for key, field in EXAM_FIELD_MAP.items():
-            if key in content_str:
-                return field
-        for key, field in LAB_FIELD_MAP.items():
-            if key in content_str:
-                return field
+        field = find_field(EXAM_FIELD_MAP)
+        if field:
+            return field
+        field = find_field(LAB_FIELD_MAP)
+        if field:
+            return field
         return "lvefValue"
-    
+
     if cat == "评估量表":
-        for key, field in ASSESSMENT_FIELD_MAP.items():
-            if key in content_str:
-                return field
-        return "ecogScore"
-    
+        field = find_field(ASSESSMENT_FIELD_MAP)
+        return field if field else "ecogScore"
+
     return "emrContent"
 
 
