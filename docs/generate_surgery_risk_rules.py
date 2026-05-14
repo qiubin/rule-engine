@@ -406,8 +406,8 @@ def generate_sql(rules, limit=None):
         reminder = rule[16] or ""
         forbidden_level = rule[17] or ""
 
-        # 构建线性条件列表（所有条件之间都是 AND 串联）
-        flat_conditions = []
+        # 构建OR组列表：同条件类别内是OR关系，不同条件类别之间是AND关系
+        or_groups = []
 
         for cat, content, val in [(cat1, content1, val1), (cat2, content2, val2), (cat3, content3, val3)]:
             if not cat:
@@ -415,22 +415,25 @@ def generate_sql(rules, limit=None):
 
             field = get_field_for_condition(cat, content)
             operator = get_operator_for_condition(cat, val)
+            group = []
 
             if cat == "诊断" and content:
-                # 每个诊断词拆分为独立的条件节点（AND关系串联）
+                # 同一诊断条件内的多个词是OR关系
                 diag_items = [d.strip() for d in str(content).split('/') if d.strip()]
                 for diag in diag_items:
-                    flat_conditions.append((field, operator, diag, cat, diag))
+                    group.append((field, operator, diag, cat, diag))
             elif cat == "手术" and content:
-                # 手术条件：取第一个手术名
                 surgery_name = str(content).split(',')[0].strip()
-                flat_conditions.append((field, operator, surgery_name, cat, surgery_name))
+                group.append((field, operator, surgery_name, cat, surgery_name))
             else:
                 op_parsed, val_parsed = parse_operator_value(val)
                 value = val_parsed if val_parsed else val
-                flat_conditions.append((field, operator, value, cat, content))
+                group.append((field, operator, value, cat, content))
 
-        if len(flat_conditions) < 1:
+            if group:
+                or_groups.append(group)
+
+        if len(or_groups) < 1:
             continue
 
         # 规则名称
@@ -443,8 +446,8 @@ def generate_sql(rules, limit=None):
         rule_name = surgery_name[:40] if surgery_name else f"手术风险规则_{i+1}"
         rule_code = f"SR_{row_num:05d}"
 
-        # 构建画布（纯线性串联，无 OR 节点）
-        canvas = build_canvas_data(rule_name, flat_conditions, reminder, forbidden_level)
+        # 构建画布：OR组内条件用OR节点，各OR组之间AND串联
+        canvas = build_canvas_with_or(rule_name, or_groups, reminder, forbidden_level)
         canvas_json = json.dumps(canvas, ensure_ascii=False)
 
         sql = (
