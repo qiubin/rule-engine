@@ -377,7 +377,7 @@ def sanitize_for_sql(text):
 def generate_sql(rules, limit=None):
     sql_lines = []
     sql_lines.append("-- 手术高风险规则自动生成 SQL")
-    sql_lines.append("-- 生成时间: 2026-05-13")
+    sql_lines.append("-- 生成时间: 2026-05-14")
     sql_lines.append("")
     sql_lines.append("-- 先确保规则类型存在")
     sql_lines.append("INSERT IGNORE INTO rule_type (code, name, description, sort_order) VALUES ('SURGERY_RISK', '手术高风险', '手术高风险规则（禁忌/预警）', 6);")
@@ -386,12 +386,12 @@ def generate_sql(rules, limit=None):
     sql_lines.append("")
     sql_lines.append("DELETE FROM rule WHERE rule_type_id = @rule_type_id;")
     sql_lines.append("")
-    
+
     count = 0
     for i, rule in enumerate(rules):
         if limit and count >= limit:
             break
-            
+
         rule_cat = rule[0] or ""
         cat1 = rule[1] or ""
         content1 = rule[2] or ""
@@ -402,60 +402,51 @@ def generate_sql(rules, limit=None):
         cat3 = rule[7] or ""
         content3 = rule[8] or ""
         val3 = rule[9] or ""
-        
+
         reminder = rule[16] or ""
         forbidden_level = rule[17] or ""
-        
-        # 构建OR组列表
-        or_groups = []
-        
+
+        # 构建线性条件列表（所有条件之间都是 AND 串联）
+        flat_conditions = []
+
         for cat, content, val in [(cat1, content1, val1), (cat2, content2, val2), (cat3, content3, val3)]:
             if not cat:
                 continue
-            
+
             field = get_field_for_condition(cat, content)
             operator = get_operator_for_condition(cat, val)
-            
+
             if cat == "诊断" and content:
-                # 拆分多个诊断词为OR组
+                # 多词诊断用逗号拼接，在一个条件节点中用 arrayContains 匹配
                 diag_items = [d.strip() for d in str(content).split('/') if d.strip()]
-                group = []
-                for item in diag_items[:10]:  # 最多10个，防止过多
-                    group.append((field, operator, item, cat, item))
-                if group:
-                    or_groups.append(group)
+                combined_value = ",".join(diag_items[:10])  # 最多10个
+                flat_conditions.append((field, operator, combined_value, cat, content))
             elif cat == "手术" and content:
-                # 手术条件：可能包含多个手术名（逗号分隔）
-                surgery_items = [s.strip() for s in str(content).split(',') if s.strip()]
-                if len(surgery_items) > 1:
-                    group = []
-                    for item in surgery_items[:5]:
-                        group.append((field, "contains", item, cat, item))
-                    or_groups.append(group)
-                else:
-                    or_groups.append([(field, "contains", content.strip(), cat, content.strip())])
+                # 手术条件：取第一个手术名
+                surgery_name = str(content).split(',')[0].strip()
+                flat_conditions.append((field, operator, surgery_name, cat, surgery_name))
             else:
                 op_parsed, val_parsed = parse_operator_value(val)
                 value = val_parsed if val_parsed else val
-                or_groups.append([(field, operator, value, cat, content)])
-        
-        if len(or_groups) < 1:
+                flat_conditions.append((field, operator, value, cat, content))
+
+        if len(flat_conditions) < 1:
             continue
-        
+
         # 规则名称
         surgery_name = ""
         for cat, content, val in [(cat1, content1, val1), (cat2, content2, val2), (cat3, content3, val3)]:
             if cat == "手术" and content:
                 surgery_name = str(content).split(',')[0].strip()
                 break
-        
+
         rule_name = surgery_name[:40] if surgery_name else f"手术风险规则_{i+1}"
         rule_code = f"SR_{i+1:05d}"
-        
-        # 构建画布
-        canvas = build_canvas_with_or(rule_name, or_groups, reminder, forbidden_level)
+
+        # 构建画布（纯线性串联，无 OR 节点）
+        canvas = build_canvas_data(rule_name, flat_conditions, reminder, forbidden_level)
         canvas_json = json.dumps(canvas, ensure_ascii=False)
-        
+
         sql = (
             f"INSERT INTO rule (code, name, version, status, rule_type_id, canvas_data, drools_drl, remark, created_at, updated_at) "
             f"VALUES ('{sanitize_for_sql(rule_code)}', '{sanitize_for_sql(rule_name)}', '1.0.0', 'DRAFT', @rule_type_id, "
@@ -463,13 +454,13 @@ def generate_sql(rules, limit=None):
         )
         sql_lines.append(sql)
         count += 1
-        
+
         if count % 500 == 0:
             sql_lines.append("")
-    
+
     sql_lines.append("")
     sql_lines.append(f"-- 共生成 {count} 条规则")
-    
+
     return "\n".join(sql_lines)
 
 

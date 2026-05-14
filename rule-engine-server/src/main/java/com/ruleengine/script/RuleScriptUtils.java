@@ -465,13 +465,22 @@ public class RuleScriptUtils {
 
     /**
      * 10.5 集合元素包含校验：判断集合中是否至少有一个元素包含目标字符串。
-     * 应用场景：多条诊断中是否包含指定诊断名称。
+     * 支持逗号分隔的多值：只要集合中任一元素包含任一目标值即命中。
+     * 应用场景：多条诊断中是否包含指定诊断名称（如 "脑梗死,高血压"）。
      */
     public static boolean arrayContains(Object collection, String target) {
         if (collection == null || target == null) return false;
         Collection<?> coll = toCollection(collection);
         if (coll == null) return false;
-        return coll.stream().anyMatch(item -> String.valueOf(item).contains(target));
+        String[] targets = target.split(",");
+        for (String t : targets) {
+            String trimmed = t.trim();
+            if (trimmed.isEmpty()) continue;
+            if (coll.stream().anyMatch(item -> String.valueOf(item).contains(trimmed))) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /**
