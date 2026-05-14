@@ -23,7 +23,6 @@ import java.util.List;
 @RequiredArgsConstructor
 public class DataInitializer implements CommandLineRunner {
 
-    private final RuleTypeRepository ruleTypeRepository;
     private final DictionaryRepository dictionaryRepository;
     private final DictionaryItemRepository dictionaryItemRepository;
     private final DataElementRepository dataElementRepository;
@@ -499,24 +498,8 @@ public class DataInitializer implements CommandLineRunner {
     }
 
     private void initRuleTypes() {
-        saveRuleType("MEDICAL_RECORD_QC", "病历质控", "病历内涵质控规则", 1);
-        saveRuleType("QUALITY_CTRL", "合理性质控", "医疗合理性质控规则", 2);
-        saveRuleType("MEDICARE_AUDIT", "医保稽核", "医保审核规则", 3);
-        saveRuleType("NURSING_DECISION", "护理决策", "护理计划与评估规则", 4);
-        saveRuleType("VTE_PREVENTION", "VTE防治", "静脉血栓栓塞防治规则", 5);
-        saveRuleType("SURGERY_RISK", "手术高风险", "手术高风险规则（禁忌/预警）", 6);
-    }
-
-    private void saveRuleType(String code, String name, String description, int sortOrder) {
-        RuleType rt = ruleTypeRepository.findByCode(code).orElse(null);
-        if (rt == null) {
-            rt = new RuleType();
-            rt.setCode(code);
-        }
-        rt.setName(name);
-        rt.setDescription(description);
-        rt.setSortOrder(sortOrder);
-        ruleTypeRepository.save(rt);
+        // 规则类型完全由前端管理（rule_type 表），不再硬编码初始化
+        // 删除后在数据库中物理删除即可，重启不会自动恢复
     }
 
     private void initConditionModelCategories() {
