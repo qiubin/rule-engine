@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
-import { Table, Button, Modal, Form, Input, Tabs, message, Popconfirm } from 'antd'
-import { PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons'
+import { Table, Button, Modal, Form, Input, Tabs, message, Popconfirm, Tag, Space, Select } from 'antd'
+import { PlusOutlined, EditOutlined, DeleteOutlined, SearchOutlined } from '@ant-design/icons'
 import axios from 'axios'
 
 const API = '/api/v1/dictionaries'
@@ -9,12 +9,17 @@ const ITEM_API = '/api/v1/dictionary-items'
 export default function DictionaryMgr() {
   const [dicts, setDicts] = useState([])
   const [items, setItems] = useState([])
+  const [itemTotal, setItemTotal] = useState(0)
   const [loading, setLoading] = useState(false)
+  const [itemLoading, setItemLoading] = useState(false)
   const [dictModalOpen, setDictModalOpen] = useState(false)
   const [itemModalOpen, setItemModalOpen] = useState(false)
   const [editingDict, setEditingDict] = useState(null)
   const [editingItem, setEditingItem] = useState(null)
   const [selectedDict, setSelectedDict] = useState(null)
+  const [activeTab, setActiveTab] = useState('dict')
+  const [itemKeyword, setItemKeyword] = useState('')
+  const [itemPagination, setItemPagination] = useState({ current: 1, pageSize: 20 })
   const [dictForm] = Form.useForm()
   const [itemForm] = Form.useForm()
 
@@ -27,15 +32,30 @@ export default function DictionaryMgr() {
     setLoading(false)
   }
 
-  const fetchItems = async (dictCode) => {
+  const fetchItems = async (dictCode, page = 1, pageSize = 20, keyword = '') => {
     if (!dictCode) return
+    setItemLoading(true)
     try {
-      const res = await axios.get(`${ITEM_API}/by-dict-code/${dictCode}`)
-      setItems(res.data)
-    } catch (e) { message.error('加载字典项失败') }
+      const res = await axios.get(`${ITEM_API}/search`, {
+        params: { dictCode, keyword, page: page - 1, size: pageSize }
+      })
+      setItems(res.data.content || [])
+      setItemTotal(res.data.totalElements || 0)
+    } catch (e) {
+      message.error('加载字典项失败')
+      setItems([])
+      setItemTotal(0)
+    }
+    setItemLoading(false)
   }
 
   useEffect(() => { fetchDicts() }, [])
+
+  useEffect(() => {
+    if (selectedDict) {
+      fetchItems(selectedDict.code, itemPagination.current, itemPagination.pageSize, itemKeyword)
+    }
+  }, [selectedDict, itemPagination, itemKeyword])
 
   const handleSaveDict = async () => {
     const values = await dictForm.validateFields()
@@ -58,12 +78,22 @@ export default function DictionaryMgr() {
       await axios.delete(`${API}/${id}`)
       message.success('删除成功')
       fetchDicts()
+      if (selectedDict && selectedDict.id === id) {
+        setSelectedDict(null)
+        setItems([])
+        setActiveTab('dict')
+      }
     } catch (e) { message.error(e.response?.data?.message || '删除失败') }
   }
 
   const handleSaveItem = async () => {
     const values = await itemForm.validateFields()
-    const payload = { ...values, dictCode: selectedDict.code, dictionaryId: selectedDict.id }
+    const payload = {
+      ...values,
+      dictCode: selectedDict.code,
+      dictionaryId: selectedDict.id,
+      status: values.status || 'ENABLED'
+    }
     try {
       if (editingItem) {
         await axios.put(`${ITEM_API}/${editingItem.id}`, { ...editingItem, ...payload })
@@ -72,7 +102,7 @@ export default function DictionaryMgr() {
       }
       message.success('保存成功')
       setItemModalOpen(false)
-      fetchItems(selectedDict.code)
+      fetchItems(selectedDict.code, itemPagination.current, itemPagination.pageSize, itemKeyword)
     } catch (e) {
       message.error('保存失败: ' + (e.response?.data?.message || e.message))
     }
@@ -82,8 +112,19 @@ export default function DictionaryMgr() {
     try {
       await axios.delete(`${ITEM_API}/${id}`)
       message.success('删除成功')
-      fetchItems(selectedDict.code)
+      fetchItems(selectedDict.code, itemPagination.current, itemPagination.pageSize, itemKeyword)
     } catch (e) { message.error(e.response?.data?.message || '删除失败') }
+  }
+
+  const handleManageItems = (record) => {
+    setSelectedDict(record)
+    setItemKeyword('')
+    setItemPagination({ current: 1, pageSize: 20 })
+    setActiveTab('items')
+  }
+
+  const handleItemTableChange = (pagination) => {
+    setItemPagination({ current: pagination.current, pageSize: pagination.pageSize })
   }
 
   const dictColumns = [
@@ -92,7 +133,7 @@ export default function DictionaryMgr() {
     { title: '名称', dataIndex: 'name' },
     { title: '描述', dataIndex: 'description', ellipsis: true },
     {
-      title: '操作', width: 200,
+      title: '操作', width: 240,
       render: (_, record) => (
         <>
           <Button type="link" icon={<EditOutlined />} onClick={() => {
@@ -100,10 +141,7 @@ export default function DictionaryMgr() {
             dictForm.setFieldsValue(record)
             setDictModalOpen(true)
           }}>编辑</Button>
-          <Button type="link" onClick={() => {
-            setSelectedDict(record)
-            fetchItems(record.code)
-          }}>管理项</Button>
+          <Button type="link" onClick={() => handleManageItems(record)}>管理项</Button>
           <Popconfirm title="确认删除?" onConfirm={() => handleDeleteDict(record.id)}>
             <Button type="link" danger icon={<DeleteOutlined />}>删除</Button>
           </Popconfirm>
@@ -113,10 +151,22 @@ export default function DictionaryMgr() {
   ]
 
   const itemColumns = [
+    { title: 'ID', dataIndex: 'id', width: 60 },
     { title: '项编码', dataIndex: 'itemCode' },
     { title: '项名称', dataIndex: 'itemName' },
     { title: '项值', dataIndex: 'itemValue' },
     { title: '排序', dataIndex: 'sortOrder', width: 80 },
+    {
+      title: '状态', dataIndex: 'status', width: 80,
+      render: (v) => {
+        const enabled = v === 'ENABLED' || v == null
+        return (
+          <Tag color={enabled ? 'green' : 'red'}>
+            {enabled ? '启用' : '禁用'}
+          </Tag>
+        )
+      }
+    },
     {
       title: '操作', width: 150,
       render: (_, record) => (
@@ -136,7 +186,7 @@ export default function DictionaryMgr() {
 
   return (
     <div style={{ padding: 24 }}>
-      <Tabs defaultActiveKey="dict">
+      <Tabs activeKey={activeTab} onChange={setActiveTab}>
         <Tabs.TabPane tab="字典管理" key="dict">
           <div style={{ marginBottom: 16 }}>
             <Button type="primary" icon={<PlusOutlined />} onClick={() => {
@@ -147,15 +197,42 @@ export default function DictionaryMgr() {
           </div>
           <Table rowKey="id" columns={dictColumns} dataSource={dicts} loading={loading} bordered />
         </Tabs.TabPane>
-        <Tabs.TabPane tab={selectedDict ? `字典项: ${selectedDict.name}` : '字典项管理'} key="items" disabled={!selectedDict}>
-          <div style={{ marginBottom: 16 }}>
+        <Tabs.TabPane tab={selectedDict ? `字典项: ${selectedDict.name} (${itemTotal}条)` : '字典项管理'} key="items" disabled={!selectedDict}>
+          <Space style={{ marginBottom: 16, display: 'flex', justifyContent: 'space-between' }}>
             <Button type="primary" icon={<PlusOutlined />} onClick={() => {
               setEditingItem(null)
               itemForm.resetFields()
               setItemModalOpen(true)
             }}>新增字典项</Button>
-          </div>
-          <Table rowKey="id" columns={itemColumns} dataSource={items} bordered />
+            <Input.Search
+              placeholder="搜索编码或名称"
+              allowClear
+              value={itemKeyword}
+              onChange={(e) => setItemKeyword(e.target.value)}
+              onSearch={(v) => {
+                setItemKeyword(v)
+                setItemPagination({ current: 1, pageSize: itemPagination.pageSize })
+              }}
+              style={{ width: 280 }}
+              prefix={<SearchOutlined />}
+            />
+          </Space>
+          <Table
+            rowKey="id"
+            columns={itemColumns}
+            dataSource={items}
+            loading={itemLoading}
+            bordered
+            pagination={{
+              current: itemPagination.current,
+              pageSize: itemPagination.pageSize,
+              total: itemTotal,
+              showSizeChanger: true,
+              pageSizeOptions: ['10', '20', '50', '100'],
+              showTotal: (total) => `共 ${total} 条`,
+            }}
+            onChange={handleItemTableChange}
+          />
         </Tabs.TabPane>
       </Tabs>
 
@@ -186,6 +263,12 @@ export default function DictionaryMgr() {
           </Form.Item>
           <Form.Item name="sortOrder" label="排序">
             <Input type="number" />
+          </Form.Item>
+          <Form.Item name="status" label="状态" initialValue="ENABLED">
+            <Select placeholder="选择状态">
+              <Select.Option value="ENABLED">启用</Select.Option>
+              <Select.Option value="DISABLED">禁用</Select.Option>
+            </Select>
           </Form.Item>
         </Form>
       </Modal>

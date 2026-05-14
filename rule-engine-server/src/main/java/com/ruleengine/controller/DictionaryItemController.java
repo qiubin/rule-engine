@@ -3,6 +3,10 @@ package com.ruleengine.controller;
 import com.ruleengine.domain.DictionaryItem;
 import com.ruleengine.service.DictionaryItemService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -21,9 +25,15 @@ public class DictionaryItemController {
         return ResponseEntity.ok(service.findAll());
     }
 
-    @GetMapping("/{id}")
-    public ResponseEntity<DictionaryItem> getById(@PathVariable Long id) {
-        return ResponseEntity.ok(service.findById(id));
+    @GetMapping("/search")
+    public ResponseEntity<Page<DictionaryItem>> search(
+            @RequestParam String dictCode,
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) String status,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        Pageable pageable = PageRequest.of(page, size, Sort.by("sortOrder").ascending().and(Sort.by("id").ascending()));
+        return ResponseEntity.ok(service.searchByDictCode(dictCode, keyword, status, pageable));
     }
 
     @GetMapping("/by-dict-code/{dictCode}")
@@ -34,6 +44,11 @@ public class DictionaryItemController {
     @GetMapping("/by-dictionary/{dictionaryId}")
     public ResponseEntity<List<DictionaryItem>> getByDictionaryId(@PathVariable Long dictionaryId) {
         return ResponseEntity.ok(service.findByDictionaryId(dictionaryId));
+    }
+
+    @GetMapping("/detail/{id}")
+    public ResponseEntity<DictionaryItem> getById(@PathVariable Long id) {
+        return ResponseEntity.ok(service.findById(id));
     }
 
     @PostMapping

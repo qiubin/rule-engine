@@ -3,6 +3,8 @@ package com.ruleengine.service;
 import com.ruleengine.domain.DictionaryItem;
 import com.ruleengine.repository.DictionaryItemRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -30,6 +32,10 @@ public class DictionaryItemService {
 
     public List<DictionaryItem> findByDictionaryId(Long dictionaryId) {
         return repository.findByDictionaryId(dictionaryId);
+    }
+
+    public Page<DictionaryItem> searchByDictCode(String dictCode, String keyword, String status, Pageable pageable) {
+        return repository.searchByDictCode(dictCode, keyword, status, pageable);
     }
 
     @Transactional
