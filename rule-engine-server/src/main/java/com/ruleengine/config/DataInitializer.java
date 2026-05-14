@@ -194,6 +194,20 @@ public class DataInitializer implements CommandLineRunner {
         initMedicalDictionaries();
         saveDictionary("NURSING_LEVEL", "护理分级", new Object[][]{{"LEVEL_1", "特级护理", "1"}, {"LEVEL_2", "一级护理", "2"}, {"LEVEL_3", "二级护理", "3"}, {"LEVEL_4", "三级护理", "4"}});
         saveDictionary("FORBIDDEN_TYPE", "禁忌类别", new Object[][]{{"ABSOLUTE", "绝对禁忌", "ABSOLUTE"}, {"RELATIVE", "相对禁忌", "RELATIVE"}, {"WARNING", "预警提醒", "WARNING"}, {"MESSAGE", "消息提醒", "MESSAGE"}});
+        initSurgeryDictionary();
+    }
+
+    private void initSurgeryDictionary() {
+        // ICD-9-CM3 手术操作编码字典头（条目通过 docs/icd9_cm3_surgery_dict.sql 导入）
+        if (dictionaryRepository.findByCode("ICD9_CM3_SURGERY").isPresent()) {
+            return;
+        }
+        Dictionary dict = new Dictionary();
+        dict.setCode("ICD9_CM3_SURGERY");
+        dict.setName("国家临床版2.0手术操作编码（ICD-9-CM3）");
+        dict.setDescription("ICD-9-CM3手术操作编码标准字典，条目通过SQL脚本导入");
+        dictionaryRepository.save(dict);
+        log.info("ICD-9-CM3手术字典头已创建，请运行 docs/icd9_cm3_surgery_dict.sql 导入条目");
     }
 
     private void initMedicalDictionaries() {

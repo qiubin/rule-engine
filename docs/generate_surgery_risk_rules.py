@@ -9,6 +9,17 @@ import openpyxl
 import json
 import re
 import sys
+import os
+
+# 加载手术字典映射（名称 -> 编码）
+SURGERY_DICT_MAP = {}
+SURGERY_DICT_PATH = os.path.join(os.path.dirname(__file__), 'icd9_cm3_surgery_map.json')
+if os.path.exists(SURGERY_DICT_PATH):
+    with open(SURGERY_DICT_PATH, 'r', encoding='utf-8') as f:
+        SURGERY_DICT_MAP = json.load(f)
+    print(f"已加载手术字典映射: {len(SURGERY_DICT_MAP)} 条")
+else:
+    print(f"警告: 未找到手术字典映射文件 {SURGERY_DICT_PATH}")
 
 LAB_FIELD_MAP = {
     "LVEF": "lvefValue",
@@ -255,16 +266,21 @@ def build_canvas_with_or(rule_name, or_groups, result_content, forbidden_level):
             if len(node_label) > 30:
                 node_label = node_label[:27] + "..."
             
+            cond_config = {
+                "field": field, "operator": operator,
+                "value": str(value) if value is not None else "",
+                "valueSource": "ADAPTER", "dictAttr": "itemName"
+            }
+            if cat == "手术" and str(value) in SURGERY_DICT_MAP:
+                cond_config["dictCode"] = "ICD9_CM3_SURGERY"
+                cond_config["dictItemCode"] = SURGERY_DICT_MAP[str(value)]
+
             nodes.append({
                 "id": cond_id, "type": "condition",
                 "position": {"x": 250, "y": y_pos},
                 "data": {
                     "label": node_label,
-                    "conditionConfig": {
-                        "field": field, "operator": operator,
-                        "value": str(value) if value is not None else "",
-                        "valueSource": "ADAPTER", "dictAttr": "itemName"
-                    }
+                    "conditionConfig": cond_config
                 }
             })
             edges.append({
@@ -294,16 +310,21 @@ def build_canvas_with_or(rule_name, or_groups, result_content, forbidden_level):
                 if len(node_label) > 30:
                     node_label = node_label[:27] + "..."
                 
+                cond_config = {
+                    "field": field, "operator": operator,
+                    "value": str(value) if value is not None else "",
+                    "valueSource": "ADAPTER", "dictAttr": "itemName"
+                }
+                if cat == "手术" and str(value) in SURGERY_DICT_MAP:
+                    cond_config["dictCode"] = "ICD9_CM3_SURGERY"
+                    cond_config["dictItemCode"] = SURGERY_DICT_MAP[str(value)]
+
                 nodes.append({
                     "id": cond_id, "type": "condition",
                     "position": {"x": 100 + i * 300, "y": y_pos + 80},
                     "data": {
                         "label": node_label,
-                        "conditionConfig": {
-                            "field": field, "operator": operator,
-                            "value": str(value) if value is not None else "",
-                            "valueSource": "ADAPTER", "dictAttr": "itemName"
-                        }
+                        "conditionConfig": cond_config
                     }
                 })
                 edges.append({
