@@ -101,7 +101,7 @@ mvn clean install
 mvn spring-boot:run
 ```
 
-后端服务启动在 `http://localhost:8080`
+后端服务启动在 `http://localhost:8082`
 
 - API 文档：通过 Controller 代码查看
 
@@ -113,7 +113,7 @@ npm install
 npm run dev
 ```
 
-前端服务启动在 `http://localhost:3000`
+前端服务启动在 `http://localhost:3001`
 
 ### 3. 初始化数据
 

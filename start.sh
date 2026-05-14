@@ -60,7 +60,7 @@ start_backend() {
 
     $MVN_CMD clean install -DskipTests
     MYSQL_HOST=localhost MYSQL_PORT="$SOCAT_PORT" $MVN_CMD spring-boot:run &
-    echo "后端服务已启动在 http://localhost:8081"
+    echo "后端服务已启动在 http://localhost:8082"
 }
 
 start_frontend() {
@@ -86,7 +86,7 @@ start_frontend() {
     fi
     
     npm run dev &
-    echo "前端服务已启动在 http://localhost:3000"
+    echo "前端服务已启动在 http://localhost:3001"
 }
 
 case "${1:-all}" in
@@ -103,8 +103,8 @@ case "${1:-all}" in
         echo ""
         echo "========================================"
         echo "所有服务已启动!"
-        echo "前端: http://localhost:3000"
-        echo "后端: http://localhost:8081"
+        echo "前端: http://localhost:3001"
+        echo "后端: http://localhost:8082"
         echo "========================================"
         ;;
     *)
