@@ -388,7 +388,7 @@ def generate_sql(rules, limit=None):
     sql_lines.append("")
 
     count = 0
-    for i, rule in enumerate(rules):
+    for i, (row_num, rule) in enumerate(rules):
         if limit and count >= limit:
             break
 
@@ -417,10 +417,10 @@ def generate_sql(rules, limit=None):
             operator = get_operator_for_condition(cat, val)
 
             if cat == "诊断" and content:
-                # 多词诊断用逗号拼接，在一个条件节点中用 arrayContains 匹配
+                # 每个诊断词拆分为独立的条件节点（AND关系串联）
                 diag_items = [d.strip() for d in str(content).split('/') if d.strip()]
-                combined_value = ",".join(diag_items[:10])  # 最多10个
-                flat_conditions.append((field, operator, combined_value, cat, content))
+                for diag in diag_items:
+                    flat_conditions.append((field, operator, diag, cat, diag))
             elif cat == "手术" and content:
                 # 手术条件：取第一个手术名
                 surgery_name = str(content).split(',')[0].strip()
@@ -441,7 +441,7 @@ def generate_sql(rules, limit=None):
                 break
 
         rule_name = surgery_name[:40] if surgery_name else f"手术风险规则_{i+1}"
-        rule_code = f"SR_{i+1:05d}"
+        rule_code = f"SR_{row_num:05d}"
 
         # 构建画布（纯线性串联，无 OR 节点）
         canvas = build_canvas_data(rule_name, flat_conditions, reminder, forbidden_level)
@@ -467,41 +467,52 @@ def generate_sql(rules, limit=None):
 def main():
     excel_path = "docs/手术高风险规则.xlsx"
     limit = None
+    selected_rows = None  # 指定Excel行号列表，如 [2, 3, 4]
     if len(sys.argv) > 1:
         excel_path = sys.argv[1]
     if len(sys.argv) > 2:
-        limit = int(sys.argv[2])
-    
+        try:
+            limit = int(sys.argv[2])
+        except ValueError:
+            # 可能是逗号分隔的行号列表
+            selected_rows = [int(x.strip()) for x in sys.argv[2].split(",") if x.strip()]
+
     print(f"读取 Excel: {excel_path}")
     wb = openpyxl.load_workbook(excel_path)
     ws = wb["新-高风险手术规则"]
-    
+
     rules = []
     for i, row in enumerate(ws.iter_rows(values_only=True), 1):
         if i == 1:
             continue
         if row[0]:
-            rules.append(row)
-    
+            rules.append((i, row))  # (excel_row_number, row_data)
+
     print(f"读取到 {len(rules)} 条规则")
-    if limit:
+
+    # 如果指定了行号，只保留这些行
+    if selected_rows:
+        rules = [(rn, r) for rn, r in rules if rn in selected_rows]
+        print(f"筛选后保留 {len(rules)} 条规则: {selected_rows}")
+    elif limit:
+        rules = rules[:limit]
         print(f"限制生成前 {limit} 条")
-    
-    sql = generate_sql(rules, limit)
-    
-    output_path = "docs/surgery_risk_rules.sql"
+
+    sql = generate_sql(rules, limit=None)  # limit已在上面处理
+
+    output_path = "docs/surgery_risk_rules_test.sql"
     with open(output_path, "w", encoding="utf-8") as f:
         f.write(sql)
-    
+
     print(f"SQL 已生成: {output_path}")
-    print(f"文件大小: {len(sql) / 1024 / 1024:.2f} MB")
-    
+    print(f"文件大小: {len(sql) / 1024:.2f} KB")
+
     stats = {"诊断": 0, "检验细项": 0, "检查结果值": 0, "评估量表": 0, "手术": 0, "年龄": 0, "性别": 0}
-    for r in rules[:limit] if limit else rules:
+    for _, r in rules:
         for cat in [r[1], r[4], r[7]]:
             if cat in stats:
                 stats[cat] += 1
-    
+
     print("\n条件类型统计:")
     for k, v in stats.items():
         if v > 0:
