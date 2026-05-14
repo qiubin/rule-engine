@@ -318,6 +318,7 @@ export default function ConfigPanel({ open, onClose, node, onUpdate }) {
             <Option value=">">大于 &gt;</Option>
             <Option value="<">小于 &lt;</Option>
             <Option value="contains">包含 contains</Option>
+            <Option value="arrayContains">集合包含 arrayContains</Option>
             <Option value="regex_match">原生正则 regex_match</Option>
             <Option value="regex_not_match">原生正则不匹配 regex_not_match</Option>
             <Option value="IN_SET">在集合中 IN_SET</Option>

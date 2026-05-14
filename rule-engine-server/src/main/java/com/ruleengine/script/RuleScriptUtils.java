@@ -464,6 +464,17 @@ public class RuleScriptUtils {
     }
 
     /**
+     * 10.5 集合元素包含校验：判断集合中是否至少有一个元素包含目标字符串。
+     * 应用场景：多条诊断中是否包含指定诊断名称。
+     */
+    public static boolean arrayContains(Object collection, String target) {
+        if (collection == null || target == null) return false;
+        Collection<?> coll = toCollection(collection);
+        if (coll == null) return false;
+        return coll.stream().anyMatch(item -> String.valueOf(item).contains(target));
+    }
+
+    /**
      * 11. 字段比对：比较两个字段的值，支持时间差、数值差、字符串相等。
      * 应用场景：入院时间与病史采集时间差(R1)、脉搏与心率矛盾(R42)、长期医嘱时间校验(R3)。
      *

@@ -257,6 +257,21 @@ public class HisClient {
                             }
                         }
                     }
+                    // 新增：为每个字段收集完整列表（如 diagnosisList）
+                    Map<String, List<Object>> listFields = new HashMap<>();
+                    for (Map<String, Object> record : records) {
+                        if (record != null) {
+                            for (Map.Entry<String, Object> field : record.entrySet()) {
+                                if (field.getValue() != null) {
+                                    listFields.computeIfAbsent(field.getKey(), k -> new ArrayList<>())
+                                            .add(field.getValue());
+                                }
+                            }
+                        }
+                    }
+                    for (Map.Entry<String, List<Object>> e : listFields.entrySet()) {
+                        result.put(e.getKey() + "List", e.getValue());
+                    }
                 }
             } else if (value != null) {
                 result.put(entry.getKey(), value);

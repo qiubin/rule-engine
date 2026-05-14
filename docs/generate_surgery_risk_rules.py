@@ -95,7 +95,7 @@ def get_field_for_condition(cat, content):
     if cat == "性别":
         return "patientGender"
     if cat == "诊断":
-        return "diagnosis"
+        return "diagnosisList"
     if cat == "用药史":
         return "drugNames"
     if cat == "过敏史" or cat == "个人史":
@@ -131,7 +131,9 @@ def get_field_for_condition(cat, content):
 
 
 def get_operator_for_condition(cat, val_str):
-    if cat in ["诊断", "手术", "用药史", "过敏史", "个人史"]:
+    if cat == "诊断":
+        return "arrayContains"
+    if cat in ["手术", "用药史", "过敏史", "个人史"]:
         return "contains"
     if cat == "性别":
         return "=="
@@ -419,7 +421,7 @@ def generate_sql(rules, limit=None):
                 diag_items = [d.strip() for d in str(content).split('/') if d.strip()]
                 group = []
                 for item in diag_items[:10]:  # 最多10个，防止过多
-                    group.append((field, "contains", item, cat, item))
+                    group.append((field, operator, item, cat, item))
                 if group:
                     or_groups.append(group)
             elif cat == "手术" and content:
