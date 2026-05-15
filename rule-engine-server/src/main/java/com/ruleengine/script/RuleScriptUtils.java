@@ -299,25 +299,55 @@ public class RuleScriptUtils {
      * @return 在时间范围内返回 TRUE
      */
     public static boolean timeCheck(String targetTime, String baseTime, Integer minHours, Integer maxHours) {
+        return timeCheck(targetTime, baseTime, minHours, maxHours, "HOUR");
+    }
+
+    /**
+     * 时间判断（支持多种时间单位）：判断两个时间字段的差值是否在设定范围内，命中时返回TRUE。
+     *
+     * @param targetTime 目标时间字符串
+     * @param baseTime 基准时间字符串
+     * @param minValue 最小相差值（null 表示不限制）
+     * @param maxValue 最大相差值（null 表示不限制）
+     * @param unit 时间单位：HOUR / MINUTE / DAY
+     * @return 在时间范围内返回 TRUE
+     */
+    public static boolean timeCheck(String targetTime, String baseTime, Integer minValue, Integer maxValue, String unit) {
         if (!StringUtils.hasText(targetTime) || !StringUtils.hasText(baseTime)) {
             return false;
         }
 
         try {
-            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
-            LocalDateTime target = LocalDateTime.parse(targetTime, formatter);
-            LocalDateTime base = LocalDateTime.parse(baseTime, formatter);
+            LocalDateTime target = parseDateTime(targetTime);
+            LocalDateTime base = parseDateTime(baseTime);
+            if (target == null || base == null) {
+                return false;
+            }
 
-            // 计算时间差（以小时为单位）
-            long diffHours = Math.abs(ChronoUnit.HOURS.between(base, target));
+            ChronoUnit chronoUnit;
+            String unitNorm = (unit != null) ? unit.trim().toUpperCase() : "HOUR";
+            switch (unitNorm) {
+                case "MINUTE":
+                    chronoUnit = ChronoUnit.MINUTES;
+                    break;
+                case "DAY":
+                    chronoUnit = ChronoUnit.DAYS;
+                    break;
+                case "HOUR":
+                default:
+                    chronoUnit = ChronoUnit.HOURS;
+                    break;
+            }
 
-            boolean minCondition = (minHours == null) || (diffHours >= minHours);
-            boolean maxCondition = (maxHours == null) || (diffHours <= maxHours);
+            long diff = Math.abs(chronoUnit.between(base, target));
+
+            boolean minCondition = (minValue == null) || (diff >= minValue);
+            boolean maxCondition = (maxValue == null) || (diff <= maxValue);
 
             return minCondition && maxCondition;
         } catch (Exception e) {
-            log.error("时间判断解析错误, targetTime: {}, baseTime: {}", targetTime, baseTime, e);
-            return false; // 解析错误返回 false
+            log.error("时间判断解析错误, targetTime: {}, baseTime: {}, unit: {}", targetTime, baseTime, unit, e);
+            return false;
         }
     }
 

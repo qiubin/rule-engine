@@ -298,9 +298,10 @@ public class DrlCompiler {
             return String.format("$param.get(\"%s\") != null && RuleScriptUtils.dataCheck(Double.valueOf(String.valueOf($param.get(\"%s\"))), \"%s\", Double.valueOf(\"%s\"))", field, field, op, thresholdStr);
         } else if ("timeCheck".equals(operator)) {
             String baseTimeField = valueStr;
-            String minHours = (!extraValue1.trim().isEmpty() && !extraValue1.equalsIgnoreCase("null")) ? extraValue1 : "null";
-            String maxHours = (!extraValue2.trim().isEmpty() && !extraValue2.equalsIgnoreCase("null")) ? extraValue2 : "null";
-            return String.format("RuleScriptUtils.timeCheck((String)$param.get(\"%s\"), (String)$param.get(\"%s\"), %s, %s)", field, baseTimeField, minHours, maxHours);
+            String minValue = (!extraValue1.trim().isEmpty() && !extraValue1.equalsIgnoreCase("null")) ? extraValue1 : "null";
+            String maxValue = (!extraValue2.trim().isEmpty() && !extraValue2.equalsIgnoreCase("null")) ? extraValue2 : "null";
+            String timeUnit = (!extraValue3.trim().isEmpty()) ? extraValue3 : "HOUR";
+            return String.format("RuleScriptUtils.timeCheck((String)$param.get(\"%s\"), (String)$param.get(\"%s\"), %s, %s, \"%s\")", field, baseTimeField, minValue, maxValue, timeUnit);
         } else if ("lengthCheck".equals(operator)) {
             String op = valueStr;
             String threshold = extraValue1;

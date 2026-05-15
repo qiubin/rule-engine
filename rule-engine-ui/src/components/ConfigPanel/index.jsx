@@ -428,6 +428,13 @@ export default function ConfigPanel({ open, onClose, node, onUpdate }) {
           <Form.Item name="extraValue2" label="最大相差小时数">
             <Input placeholder="留空则不限制" />
           </Form.Item>
+          <Form.Item name="extraValue3" label="时间单位" initialValue="HOUR">
+            <Select placeholder="选择时间单位">
+              <Option value="HOUR">小时</Option>
+              <Option value="MINUTE">分钟</Option>
+              <Option value="DAY">天</Option>
+            </Select>
+          </Form.Item>
         </>
       ) : selectedOperator === 'lengthCheck' ? (
         <>
