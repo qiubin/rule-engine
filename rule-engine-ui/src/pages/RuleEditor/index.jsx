@@ -80,6 +80,24 @@ function FlowCanvas() {
         if (canvas.nodes) loadedNodes = canvas.nodes
         if (canvas.edges) loadedEdges = canvas.edges
       }
+      // 标准化已有 start/end 节点的 id（如 start-1 → start），并同步更新 edges
+      const normalizeNodeId = (oldId, newId) => {
+        loadedNodes.forEach(n => {
+          if (n.id === oldId) n.id = newId
+        })
+        loadedEdges.forEach(e => {
+          if (e.source === oldId) e.source = newId
+          if (e.target === oldId) e.target = newId
+        })
+      }
+      loadedNodes.forEach(n => {
+        if (n.type === 'start' && n.id !== 'start') {
+          normalizeNodeId(n.id, 'start')
+        }
+        if (n.type === 'end' && n.id !== 'end') {
+          normalizeNodeId(n.id, 'end')
+        }
+      })
       // 确保画布始终有开始和结束节点
       const hasStart = loadedNodes.some(n => n.id === 'start')
       const hasEnd = loadedNodes.some(n => n.id === 'end')

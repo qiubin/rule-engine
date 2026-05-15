@@ -35,7 +35,8 @@ def build_canvas(rule_name, field, operator, value, extra_value1="", extra_value
     cond_id = f"cond-{rule_name}"
     res_pass_id = f"res-pass-{rule_name}"
     res_fail_id = f"res-fail-{rule_name}"
-    start_id = f"start-{rule_name}"
+    # 开始/结束节点使用固定 id，与编辑器约定一致
+    start_id = "start"
 
     condition_config = {
         "field": field,
