@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react'
+import axios from 'axios'
 import RuleEditor from './pages/RuleEditor'
 import RuleTypeMgr from './pages/RuleTypeMgr'
 import DataElementMgr from './pages/DataElementMgr'
@@ -13,6 +14,18 @@ const NAV_ITEMS = [
   { key: 'execute', label: '规则执行' },
   { key: 'system', label: '系统管理' },
 ]
+
+const PAGE_NAME_MAP = {
+  'types': '规则类型',
+  'execute': '规则执行',
+  'system': '系统管理',
+  'editor': '规则编辑器',
+}
+
+function recordAccess(pageName) {
+  if (!pageName) return
+  axios.post('/api/v1/access-logs', { pageName }).catch(() => {})
+}
 
 function App() {
   const [currentPage, setCurrentPage] = useState('types')
@@ -29,6 +42,7 @@ function App() {
       }
       if (pageMap[page]) {
         setCurrentPage(pageMap[page])
+        recordAccess(PAGE_NAME_MAP[pageMap[page]])
       }
     }
   }, [])
@@ -36,6 +50,7 @@ function App() {
   const handleNavClick = (key) => {
     setCurrentPage(key)
     window.history.replaceState({}, '', '/')
+    recordAccess(PAGE_NAME_MAP[key])
   }
 
   const renderPage = () => {

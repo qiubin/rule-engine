@@ -1,10 +1,12 @@
 import React, { useState } from 'react'
+import axios from 'axios'
 import ConditionModelMgr from '../ConditionModelMgr'
 import ResultModelMgr from '../ResultModelMgr'
 import DictionaryMgr from '../DictionaryMgr'
 import DataElementMgr from '../DataElementMgr'
 import AdapterConfigPage from '../AdapterConfigPage'
 import DbConfigPage from '../DbConfigPage'
+import AccessLogMgr from '../AccessLogMgr'
 
 const TABS = [
   { key: 'models', label: '条件管理' },
@@ -13,10 +15,24 @@ const TABS = [
   { key: 'dataElements', label: '数据元管理' },
   { key: 'adapter', label: '适配器配置' },
   { key: 'db', label: '数据库配置' },
+  { key: 'accessLogs', label: '访问日志' },
 ]
+
+function recordAccess(pageName) {
+  if (!pageName) return
+  axios.post('/api/v1/access-logs', { pageName }).catch(() => {})
+}
 
 export default function SystemMenu() {
   const [activeTab, setActiveTab] = useState('models')
+
+  const handleTabClick = (key) => {
+    setActiveTab(key)
+    const tab = TABS.find(t => t.key === key)
+    if (tab) {
+      recordAccess(`系统管理 - ${tab.label}`)
+    }
+  }
 
   const renderContent = () => {
     switch (activeTab) {
@@ -26,6 +42,7 @@ export default function SystemMenu() {
       case 'dataElements': return <DataElementMgr />
       case 'adapter': return <AdapterConfigPage />
       case 'db': return <DbConfigPage />
+      case 'accessLogs': return <AccessLogMgr />
       default: return <ConditionModelMgr />
     }
   }
@@ -36,7 +53,7 @@ export default function SystemMenu() {
         {TABS.map(tab => (
           <div
             key={tab.key}
-            onClick={() => setActiveTab(tab.key)}
+            onClick={() => handleTabClick(tab.key)}
             style={{
               padding: '12px 24px',
               cursor: 'pointer',

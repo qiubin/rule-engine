@@ -83,6 +83,27 @@ public class DataInitializer implements CommandLineRunner {
         }
     }
 
+    private void ensureAccessLogTableExists() {
+        try {
+            jdbcTemplate.queryForObject("SELECT COUNT(*) FROM access_log", Integer.class);
+        } catch (Exception e) {
+            log.info("Creating missing 'access_log' table...");
+            jdbcTemplate.execute(
+                "CREATE TABLE IF NOT EXISTS access_log (" +
+                "  id BIGINT AUTO_INCREMENT PRIMARY KEY," +
+                "  page_name VARCHAR(128)," +
+                "  request_path VARCHAR(512)," +
+                "  request_method VARCHAR(16)," +
+                "  client_ip VARCHAR(64)," +
+                "  user_agent VARCHAR(512)," +
+                "  access_time DATETIME DEFAULT CURRENT_TIMESTAMP," +
+                "  INDEX idx_access_time (access_time)" +
+                ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4"
+            );
+            log.info("'access_log' table created.");
+        }
+    }
+
     private void ensureRuleVersionTableExists() {
         try {
             jdbcTemplate.queryForObject("SELECT COUNT(*) FROM rule_version", Integer.class);
@@ -130,6 +151,7 @@ public class DataInitializer implements CommandLineRunner {
         ensureTableExists();
         ensureExecutionLogTableExists();
         ensureRuleVersionTableExists();
+        ensureAccessLogTableExists();
         migrateDataElementIds();
         log.info("开始检查并初始化基础数据...");
 
