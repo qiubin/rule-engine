@@ -625,4 +625,11 @@ public class RuleScriptUtils {
         }
     }
 
+    /**
+     * 范围判断：value 是否在 [min, max] 范围内
+     */
+    public static boolean isBetween(double value, double min, double max) {
+        return value >= min && value <= max;
+    }
+
 }
