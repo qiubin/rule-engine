@@ -529,6 +529,9 @@ export default function ConfigPanel({ open, onClose, node, onUpdate, conditionFi
             <Option value="!=">不等于 !=</Option>
             <Option value=">">大于 &gt;</Option>
             <Option value="<">小于 &lt;</Option>
+            <Option value=">=">大于等于 &gt;=</Option>
+            <Option value="<=">小于等于 &lt;=</Option>
+            <Option value="between">在范围内 between</Option>
             <Option value="contains">包含 contains</Option>
             <Option value="arrayContains">集合包含 arrayContains</Option>
             <Option value="regex_match">原生正则 regex_match</Option>
@@ -792,6 +795,15 @@ export default function ConfigPanel({ open, onClose, node, onUpdate, conditionFi
           </Form.Item>
           <Form.Item name="extraValue4" label="阈值" rules={[{ required: true }]}>
             <Input placeholder="如: 2" />
+          </Form.Item>
+        </>
+      ) : selectedOperator === 'between' ? (
+        <>
+          <Form.Item name="value" label="最小值" rules={[{ required: true }]}>
+            <Input placeholder="如: 0" type="number" />
+          </Form.Item>
+          <Form.Item name="extraValue1" label="最大值" rules={[{ required: true }]}>
+            <Input placeholder="如: 250" type="number" />
           </Form.Item>
         </>
       ) : elementDictCode ? (
