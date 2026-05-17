@@ -253,11 +253,7 @@ public class DrlCompiler {
         } else if ("<=".equals(operator)) {
             return String.format("$param.get(\"%s\") != null && Double.parseDouble(String.valueOf($param.get(\"%s\"))) <= %s", field, field, valueStr);
         } else if ("between".equals(operator)) {
-<<<<<<< HEAD
             return String.format("RuleScriptUtils.isBetween($param.get(\"%s\"), \"%s\", \"%s\")", field, valueStr, extraValue1);
-=======
-            return String.format("$param.get(\"%s\") != null && RuleScriptUtils.isBetween(Double.parseDouble(String.valueOf($param.get(\"%s\"))), %s, %s)", field, field, valueStr, extraValue1);
->>>>>>> 76764b8641db66cf64db8caf2ccfcd370b28e640
         } else if ("contains".equals(operator)) {
             return String.format("$param.get(\"%s\") != null && String.valueOf($param.get(\"%s\")).contains(\"%s\")", field, field, valueStr);
         } else if ("arrayContains".equals(operator)) {
