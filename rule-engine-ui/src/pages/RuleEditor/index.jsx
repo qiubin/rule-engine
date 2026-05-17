@@ -9,7 +9,7 @@ import ReactFlow, {
   MiniMap,
   Panel,
 } from 'reactflow'
-import { Button, message, Modal, Input, Select, Form } from 'antd'
+import { Button, message, Modal, Input, Select, Form, Tag } from 'antd'
 import { SaveOutlined, PlayCircleOutlined, PlusOutlined, DeleteOutlined, ArrowLeftOutlined, ColumnWidthOutlined } from '@ant-design/icons'
 import dagre from 'dagre'
 import { nodeTypes } from '../../components/Nodes'
@@ -190,7 +190,7 @@ function FlowCanvas() {
     await doSaveCanvas(currentRule.id)
   }
 
-  const doSaveCanvas = async (ruleId) => {
+  const doSaveCanvas = async (ruleId, silent = false) => {
     try {
       const canvasData = {
         nodes: nodes.map(n => ({ id: n.id, type: n.type, position: n.position, data: n.data })),
@@ -200,7 +200,7 @@ function FlowCanvas() {
         }))
       }
       await axios.put(`${API_BASE}/rules/${ruleId}/canvas`, canvasData)
-      message.success('画布保存成功')
+      if (!silent) message.success('画布保存成功')
     } catch (err) {
       message.error('保存失败: ' + (err.response?.data?.message || err.message))
     }
@@ -265,36 +265,114 @@ function FlowCanvas() {
     if (!values) return
     setExecuting(true)
     try {
-      // 先保存画布，确保后端拿到最新数据
-      await doSaveCanvas(currentRule.id)
+      // 先保存画布，确保后端拿到最新数据（静默保存，不弹提示）
+      await doSaveCanvas(currentRule.id, true)
       // 调用 test-execute（无需发布）
       const res = await axios.post(`${API_BASE}/rules/${currentRule.id}/test-execute`, values)
+      // 渲染高亮动态值的结果内容
+      const renderHighlightedContent = (template, params) => {
+        if (!template) return null
+        const regex = /\$\{(\w+)\}/g
+        const parts = []
+        let lastIndex = 0
+        let match
+        while ((match = regex.exec(template)) !== null) {
+          if (match.index > lastIndex) {
+            parts.push(<span key={`t${lastIndex}`}>{template.slice(lastIndex, match.index)}</span>)
+          }
+          const fieldName = match[1]
+          const value = params?.[fieldName]
+          parts.push(
+            <span key={`v${match.index}`} style={{
+              color: '#cf1322', fontWeight: 'bold',
+              background: '#fff1f0', padding: '1px 4px', borderRadius: 3,
+              borderBottom: '2px solid #ff4d4f'
+            }}>
+              {value !== undefined && value !== null ? String(value) : match[0]}
+            </span>
+          )
+          lastIndex = match.index + match[0].length
+        }
+        if (lastIndex < template.length) {
+          parts.push(<span key={`t${lastIndex}`}>{template.slice(lastIndex)}</span>)
+        }
+        return parts.length > 0 ? parts : template
+      }
+
+      const resultColors = {
+        REJECT: { border: '#ff4d4f', bg: '#fff2f0', icon: '✗', label: '拦截' },
+        WARNING: { border: '#faad14', bg: '#fffbe6', icon: '⚠', label: '警告' },
+        REMINDER: { border: '#1890ff', bg: '#e6f7ff', icon: 'ℹ', label: '提醒' },
+        CONTRAINDICATION: { border: '#ff4d4f', bg: '#fff2f0', icon: '✗', label: '禁忌' },
+        INTERACTION: { border: '#faad14', bg: '#fffbe6', icon: '⚠', label: '相互作用' },
+      }
       Modal.success({
         title: '规则执行结果',
-        width: 600,
+        width: 680,
         content: (
           <div>
-            <div style={{ marginBottom: 12 }}>
-              <span style={{ fontWeight: 'bold' }}>触发规则数: </span>
-              <span style={{ color: res.data.firedRules > 0 ? '#52c41a' : '#999', fontSize: 18 }}>{res.data.firedRules}</span>
-              <span style={{ marginLeft: 24, fontWeight: 'bold' }}>是否匹配: </span>
-              <span style={{ color: res.data.matched ? '#52c41a' : '#ff4d4f', fontSize: 18 }}>{res.data.matched ? '是' : '否'}</span>
+            <div style={{ marginBottom: 16, padding: '12px 16px', background: '#fafafa', borderRadius: 6, display: 'flex', alignItems: 'center', gap: 24 }}>
+              <div>
+                <span style={{ fontWeight: 'bold', color: '#666', fontSize: 13 }}>触发规则</span>
+                <div style={{ color: res.data.firedRules > 0 ? '#52c41a' : '#999', fontSize: 28, fontWeight: 'bold' }}>{res.data.firedRules}</div>
+              </div>
+              <div>
+                <span style={{ fontWeight: 'bold', color: '#666', fontSize: 13 }}>匹配结果</span>
+                <div style={{ color: res.data.matched ? '#52c41a' : '#ff4d4f', fontSize: 16, fontWeight: 'bold' }}>{res.data.matched ? '已匹配' : '未匹配'}</div>
+              </div>
             </div>
             {res.data.results && Array.isArray(res.data.results) && res.data.results.length > 0 && (
               <div style={{ marginBottom: 12 }}>
-                <div style={{ fontWeight: 'bold', marginBottom: 4 }}>匹配详情:</div>
-                {res.data.results.map((r, idx) => (
-                  <div key={idx} style={{ background: '#f0f0f0', padding: 8, marginBottom: 4, borderRadius: 4, fontSize: 13 }}>
-                    <div>节点: {r.nodeLabel}</div>
-                    <div>结果类型: {r.resultType}</div>
-                    <div>结果值: {r.resultValue}</div>
-                  </div>
-                ))}
+                <div style={{ fontWeight: 'bold', marginBottom: 8, color: '#333' }}>匹配详情:</div>
+                {res.data.results.map((r, idx) => {
+                  const rc = resultColors[r.resultType] || { border: '#52c41a', bg: '#f6ffed', icon: '✓', label: '通过' }
+                  return (
+                    <div key={idx} style={{
+                      border: `1px solid ${rc.border}`,
+                      background: rc.bg,
+                      padding: 12,
+                      marginBottom: 8,
+                      borderRadius: 6,
+                      fontSize: 13
+                    }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+                        <span style={{
+                          display: 'inline-block',
+                          background: rc.border,
+                          color: '#fff',
+                          borderRadius: 3,
+                          padding: '0 6px',
+                          fontSize: 12,
+                          lineHeight: '20px'
+                        }}>{rc.icon} {rc.label}</span>
+                        <span style={{ fontWeight: 'bold', color: '#333' }}>{r.nodeLabel}</span>
+                        <Tag style={{ marginLeft: 'auto', fontSize: 11 }} color="default">{r.resultType}</Tag>
+                      </div>
+                      {r.content && (
+                        <div style={{
+                          background: '#fff',
+                          border: `1px dashed ${rc.border}`,
+                          borderRadius: 4,
+                          padding: '8px 10px',
+                          marginTop: 4,
+                          color: '#333',
+                          fontSize: 13,
+                          lineHeight: 1.6
+                        }}>
+                          {renderHighlightedContent(r.content, res.data.parameters)}
+                        </div>
+                      )}
+                      <div style={{ marginTop: 6, color: '#888', fontSize: 12 }}>
+                        结果值: {r.resultValue}
+                      </div>
+                    </div>
+                  )
+                })}
               </div>
             )}
             <details>
-              <summary style={{ cursor: 'pointer', color: '#1890ff' }}>原始响应</summary>
-              <pre style={{ maxHeight: 300, overflow: 'auto', fontSize: 12, background: '#f6ffed', padding: 8, borderRadius: 4 }}>
+              <summary style={{ cursor: 'pointer', color: '#1890ff', fontSize: 13 }}>原始响应</summary>
+              <pre style={{ maxHeight: 300, overflow: 'auto', fontSize: 12, background: '#f6ffed', padding: 8, borderRadius: 4, marginTop: 4 }}>
                 {JSON.stringify(res.data, null, 2)}
               </pre>
             </details>
@@ -378,6 +456,7 @@ function FlowCanvas() {
       <ConfigPanel
         open={isConfigOpen} onClose={() => setIsConfigOpen(false)}
         node={selectedNode} onUpdate={onNodeConfigUpdate}
+        conditionFields={parseConditionFields()}
       />
       <Modal title="测试执行参数" open={execModalOpen} onCancel={() => setExecModalOpen(false)} onOk={doExecute} confirmLoading={executing}>
         <Form form={execForm} layout="vertical">

@@ -265,6 +265,47 @@ public class DictScriptService {
     }
 
     /**
+     * 字典匹配（支持预选值）：从字典中筛选特定条目进行匹配。
+     * 当用户在前端选择了字典中的部分条目时，selectedValues 是逗号分隔的选中值列表。
+     * 若 selectedValues 为空，则退化为全字典匹配（即 whitelistMatch 语义）。
+     *
+     * @param input          待校验的字符串
+     * @param allowedDictCode 字典编码（用于加载候选列表）
+     * @param selectedValues 用户勾选的字典值（逗号分隔），若为空则匹配字典全部条目
+     * @param dictAttr       匹配字典的属性：itemName(名称) / itemCode(编码) / itemValue(值)
+     * @return 输入中包含任意选中字典值时返回 TRUE
+     */
+    public boolean dictMatchWithSelected(String input, String allowedDictCode, String selectedValues, String dictAttr) {
+        if (!StringUtils.hasText(input) || !StringUtils.hasText(allowedDictCode)) {
+            return false;
+        }
+
+        List<String> allowed = getDictItemsByAttr(allowedDictCode, dictAttr);
+        if (allowed.isEmpty()) {
+            log.warn("字典为空: dictCode={}", allowedDictCode);
+            return false;
+        }
+
+        // 如果用户勾选了具体值，只检查这些值
+        if (StringUtils.hasText(selectedValues)) {
+            String[] selected = selectedValues.split("\\s*,\\s*");
+            for (String val : selected) {
+                if (!StringUtils.hasText(val)) continue;
+                if (input.contains(val.trim())) {
+                    log.debug("字典匹配(预选值)通过：输入包含 '{}'", val);
+                    return true;
+                }
+            }
+            log.debug("字典匹配(预选值)失败：输入不包含任何选中值。选中值={}", selectedValues);
+            return false;
+        }
+
+        // 未勾选具体值，退化为全字典匹配（检查输入是否包含字典任意条目）
+        log.debug("字典匹配(全字典)退化至 whitelistMatch");
+        return whitelistMatch(input, allowedDictCode, null, dictAttr);
+    }
+
+    /**
      * 单正则匹配（字典版）：将字典词条拼接成正则进行匹配
      *
      * @param input    输入字符串

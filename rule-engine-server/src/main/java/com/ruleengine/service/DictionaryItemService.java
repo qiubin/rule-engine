@@ -34,8 +34,8 @@ public class DictionaryItemService {
         return repository.findByDictionaryId(dictionaryId);
     }
 
-    public Page<DictionaryItem> searchByDictCode(String dictCode, String keyword, String status, Pageable pageable) {
-        return repository.searchByDictCode(dictCode, keyword, status, pageable);
+    public Page<DictionaryItem> searchByDictCode(String dictCode, String keyword, String status, String attr, Pageable pageable) {
+        return repository.searchByDictCode(dictCode, keyword, status, attr, pageable);
     }
 
     @Transactional

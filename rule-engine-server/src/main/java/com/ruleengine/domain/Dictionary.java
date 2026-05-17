@@ -37,8 +37,12 @@ public class Dictionary {
     @Enumerated(EnumType.STRING)
     private CommonStatus status = CommonStatus.ENABLED;
 
+    @javax.persistence.Transient
+    private int itemCount = 0;
+
     @OneToMany(mappedBy = "dictionary", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @JsonIgnoreProperties({"hibernateLazyInitializer", "handler", "dictionary"})
+    @com.fasterxml.jackson.annotation.JsonIgnore
     private List<DictionaryItem> items = new ArrayList<>();
 
     @CreationTimestamp

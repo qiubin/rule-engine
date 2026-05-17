@@ -291,6 +291,10 @@ public class DrlCompiler {
             String allKeywords = extraValue1;
             return String.format("RuleScriptUtils.whitelistMatch((String)$param.get(\"%s\"), \"%s\", \"%s\")", field, allowedKeywords, allKeywords);
         } else if ("dictMatch".equals(operator)) {
+            if (!extraValue1.isEmpty()) {
+                // 用户在前端勾选了具体字典值
+                return String.format("dictUtils.dictMatchWithSelected((String)$param.get(\"%s\"), \"%s\", \"%s\", \"%s\")", field, dictCode, extraValue1, dictAttr);
+            }
             return String.format("dictUtils.whitelistMatch((String)$param.get(\"%s\"), \"%s\", \"%s\", \"%s\")", field, dictCode, allDictCode, dictAttr);
         } else if ("dataCheck".equals(operator)) {
             String op = valueStr;

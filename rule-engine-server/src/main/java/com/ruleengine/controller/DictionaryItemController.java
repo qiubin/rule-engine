@@ -30,10 +30,11 @@ public class DictionaryItemController {
             @RequestParam String dictCode,
             @RequestParam(required = false) String keyword,
             @RequestParam(required = false) String status,
+            @RequestParam(required = false) String attr,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
         Pageable pageable = PageRequest.of(page, size, Sort.by("sortOrder").ascending().and(Sort.by("id").ascending()));
-        return ResponseEntity.ok(service.searchByDictCode(dictCode, keyword, status, pageable));
+        return ResponseEntity.ok(service.searchByDictCode(dictCode, keyword, status, attr, pageable));
     }
 
     @GetMapping("/by-dict-code/{dictCode}")

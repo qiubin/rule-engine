@@ -1,11 +1,11 @@
 import React, { useEffect, useState, useMemo } from 'react'
-import { Drawer, Form, Input, Select, Button, Radio, Tag, Cascader } from 'antd'
-import { SaveOutlined } from '@ant-design/icons'
+import { Drawer, Form, Input, Select, Button, Radio, Tag, Cascader, Spin, Modal, Checkbox, message } from 'antd'
+import { SaveOutlined, SearchOutlined } from '@ant-design/icons'
 import axios from 'axios'
 
 const { Option, OptGroup } = Select
 
-export default function ConfigPanel({ open, onClose, node, onUpdate }) {
+export default function ConfigPanel({ open, onClose, node, onUpdate, conditionFields }) {
   const [form] = Form.useForm()
   const [categories, setCategories] = useState([])
   const [conditions, setConditions] = useState([])
@@ -20,12 +20,20 @@ export default function ConfigPanel({ open, onClose, node, onUpdate }) {
   const [dataElements, setDataElements] = useState([])
   const [allConditions, setAllConditions] = useState([])
   const [selectedDatasetId, setSelectedDatasetId] = useState(null)
+  // 来自数据元的字典编码（用于条件值自动加载字典项）
+  const [elementDictCode, setElementDictCode] = useState(null)
 
   useEffect(() => {
     if (node && open) {
+      const cc = node.data?.conditionConfig
+      // 字典匹配的 extraValue1 是逗号字符串，需转数组供 mode="multiple" 使用
+      const initialExtra1 = cc?.operator === 'dictMatch' && typeof cc?.extraValue1 === 'string'
+        ? cc.extraValue1.split(',').filter(Boolean)
+        : cc?.extraValue1
       form.setFieldsValue({
         label: node.data?.label || '',
-        ...node.data?.conditionConfig,
+        ...cc,
+        extraValue1: initialExtra1,
         ...node.data?.resultConfig,
       })
       setSelectedOperator(node.data?.conditionConfig?.operator || null)
@@ -79,6 +87,7 @@ export default function ConfigPanel({ open, onClose, node, onUpdate }) {
             const ds = dataSets.find(s => s.id === de.datasetId)
             if (ds) {
               setSelectedDatasetId(de.datasetId)
+              setElementDictCode(de.dictCode || null)
               form.setFieldsValue({
                 datasetId: [ds.catL1Code, ds.catL2Code, ds.catL3Code, ds.id]
               })
@@ -213,11 +222,14 @@ export default function ConfigPanel({ open, onClose, node, onUpdate }) {
     const newData = { label: values.label }
 
     if (node.type === 'condition') {
+      // 处理多选字典值：Ant Design Select mode="multiple" 返回数组，需转成逗号分隔字符串
+      const extra1 = values.operator === 'dictMatch' && Array.isArray(values.extraValue1)
+        ? values.extraValue1.join(',') : values.extraValue1
       newData.conditionConfig = {
         field: values.field,
         operator: values.operator,
         value: values.value,
-        extraValue1: values.extraValue1,
+        extraValue1: extra1,
         extraValue2: values.extraValue2,
         extraValue3: values.extraValue3,
         extraValue4: values.extraValue4,
@@ -246,10 +258,10 @@ export default function ConfigPanel({ open, onClose, node, onUpdate }) {
 
   const DictSelect = ({ name, label }) => (
     <Form.Item name={name} label={label} style={{ marginTop: -8 }}>
-      <Select placeholder="选择字典" allowClear>
+      <Select placeholder="选择字典" allowClear showSearch optionFilterProp="children">
         {dictionaries.map(dict => (
           <Option key={dict.code} value={dict.code}>
-            {dict.name} ({dict.items?.length || 0}项)
+            {dict.name} ({dict.itemCount || 0}项)
           </Option>
         ))}
       </Select>
@@ -266,6 +278,201 @@ export default function ConfigPanel({ open, onClose, node, onUpdate }) {
     </Form.Item>
   )
 
+  const DictItemPicker = () => {
+    const dictCode = Form.useWatch('dictCode', form)
+    const dictAttr = Form.useWatch('dictAttr', form)
+    const [modalOpen, setModalOpen] = useState(false)
+    const [searchKeyword, setSearchKeyword] = useState('')
+    const [searchResults, setSearchResults] = useState([])
+    const [searchLoading, setSearchLoading] = useState(false)
+    const [selectedSet, setSelectedSet] = useState(new Set())
+    const [selectedLabels, setSelectedLabels] = useState({})
+
+    const currentVal = Form.useWatch('extraValue1', form) || []
+
+    const openSearch = async () => {
+      setSearchKeyword('')
+      setSearchResults([])
+      // 初始化已选集合
+      const vals = Array.isArray(currentVal) ? currentVal : (currentVal ? currentVal.split(',').filter(Boolean) : [])
+      setSelectedSet(new Set(vals))
+      setModalOpen(true)
+      // 加载第一页
+      setSearchLoading(true)
+      try {
+        const res = await axios.get('/api/v1/dictionary-items/search', {
+          params: { dictCode, keyword: '', attr: dictAttr || '', page: 0, size: 50 }
+        })
+        setSearchResults(res.data?.content || [])
+      } finally {
+        setSearchLoading(false)
+      }
+    }
+
+    const doSearch = async (keyword) => {
+      setSearchKeyword(keyword)
+      setSearchLoading(true)
+      try {
+        const res = await axios.get('/api/v1/dictionary-items/search', {
+          params: { dictCode, keyword, attr: dictAttr || '', page: 0, size: 50 }
+        })
+        setSearchResults(res.data?.content || [])
+      } finally {
+        setSearchLoading(false)
+      }
+    }
+
+    const toggleItem = (item) => {
+      const val = extractValue(item)
+      setSelectedSet(prev => {
+        const next = new Set(prev)
+        if (next.has(val)) {
+          next.delete(val)
+        } else {
+          next.add(val)
+        }
+        return new Set(next)
+      })
+      setSelectedLabels(prev => ({ ...prev, [val]: `${item.itemCode} ${item.itemName}` }))
+    }
+
+    const extractValue = (item) => {
+      if (dictAttr === 'itemCode') return item.itemCode
+      if (dictAttr === 'itemValue') return item.itemValue || item.itemName
+      return item.itemName
+    }
+
+    const confirmSelection = () => {
+      const arr = Array.from(selectedSet)
+      form.setFieldsValue({ extraValue1: arr })
+      setModalOpen(false)
+    }
+
+    return (
+      <>
+        <Form.Item name="extraValue1" label="选择匹配值（留空则匹配字典全部项）" style={{ marginTop: -8 }}>
+          <Select
+            mode="multiple"
+            placeholder={dictCode ? '点击右侧按钮搜索' : '请先在上方选择字典'}
+            disabled={!dictCode}
+            open={false}
+            onClick={() => dictCode && openSearch()}
+            tagRender={({ label, value, closable, onClose }) => (
+              <Tag closable={closable} onClose={onClose} style={{ marginBottom: 2 }}>
+                {label}
+              </Tag>
+            )}
+            dropdownStyle={{ display: 'none' }}
+            maxTagCount={10}
+          />
+        </Form.Item>
+        <Modal
+          title={`选择字典值 — ${dictionaries.find(d => d.code === dictCode)?.name || dictCode || ''}`}
+          open={modalOpen}
+          onCancel={() => setModalOpen(false)}
+          onOk={confirmSelection}
+          okText="确认选择"
+          cancelText="取消"
+          width={640}
+        >
+          <Input.Search
+            placeholder="输入编码或名称搜索..."
+            allowClear
+            onSearch={doSearch}
+            enterButton={<><SearchOutlined /> 搜索</>}
+            style={{ marginBottom: 12 }}
+          />
+          {searchKeyword && (
+            <div style={{ marginBottom: 8, color: '#999', fontSize: 12 }}>
+              搜索："{searchKeyword}"，找到 {searchResults.length} 条结果
+            </div>
+          )}
+          <Spin spinning={searchLoading}>
+            <div style={{ maxHeight: 400, overflow: 'auto', border: '1px solid #f0f0f0', borderRadius: 4 }}>
+              {searchResults.length === 0 && !searchLoading ? (
+                <div style={{ padding: 24, textAlign: 'center', color: '#999' }}>输入关键词搜索字典项</div>
+              ) : searchResults.map(item => {
+                const val = extractValue(item)
+                const checked = selectedSet.has(val)
+                return (
+                  <div
+                    key={item.id}
+                    onClick={() => toggleItem(item)}
+                    style={{
+                      padding: '8px 12px',
+                      cursor: 'pointer',
+                      borderBottom: '1px solid #f5f5f5',
+                      background: checked ? '#e6f7ff' : undefined,
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 8,
+                    }}
+                  >
+                    <Checkbox checked={checked} />
+                    <span style={{ fontWeight: 500, minWidth: 100 }}>{item.itemCode}</span>
+                    <span>{item.itemName}</span>
+                    {item.itemValue ? <span style={{ color: '#999', marginLeft: 'auto' }}>({item.itemValue})</span> : null}
+                  </div>
+                )
+              })}
+            </div>
+          </Spin>
+          <div style={{ marginTop: 8, color: '#666' }}>
+            已选 <Tag color="blue">{selectedSet.size}</Tag> 项
+          </div>
+        </Modal>
+      </>
+    )
+  }
+
+  const DictValuePicker = ({ dictCode: propDictCode }) => {
+    const dictCode = propDictCode || Form.useWatch('dictCode', form)
+    const dictAttr = Form.useWatch('dictAttr', form)
+    const [searchVal, setSearchVal] = useState('')
+    const [results, setResults] = useState([])
+    const [loading, setLoading] = useState(false)
+
+    const doSearch = async (keyword) => {
+      if (!dictCode) return
+      setSearchVal(keyword)
+      setLoading(true)
+      try {
+        const res = await axios.get('/api/v1/dictionary-items/search', {
+          params: { dictCode, keyword, attr: dictAttr || '', page: 0, size: 30 }
+        })
+        setResults(res.data?.content || [])
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    return (
+      <Form.Item name="value" label="条件值（字典项）" rules={[{ required: true }]} style={{ marginTop: -8 }}>
+        <Select
+          showSearch
+          placeholder="搜索并选择字典值"
+          filterOption={false}
+          onSearch={doSearch}
+          onFocus={() => doSearch('')}
+          notFoundContent={loading ? <Spin size="small" /> : (searchVal ? '无匹配项' : '输入关键词搜索')}
+          allowClear
+        >
+          {results.map(item => {
+            const val = dictAttr === 'itemCode' ? item.itemCode
+                      : dictAttr === 'itemValue' ? (item.itemValue || item.itemName)
+                      : item.itemName
+            return (
+              <Option key={item.id} value={val} title={`${item.itemCode} ${item.itemName}`}>
+                <span style={{ fontWeight: 500 }}>{item.itemCode}</span>
+                <span style={{ marginLeft: 8 }}>{item.itemName}</span>
+              </Option>
+            )
+          })}
+        </Select>
+      </Form.Item>
+    )
+  }
+
   const renderConditionForm = () => (
     <>
       <Form.Item name="datasetId" label="数据集分类" rules={[{ required: true, message: '必须选择数据集分类' }]}>
@@ -275,6 +482,7 @@ export default function ConfigPanel({ open, onClose, node, onUpdate }) {
           onChange={(value) => {
             const dsId = value?.[value.length - 1]
             setSelectedDatasetId(dsId || null)
+            setElementDictCode(null)
             form.setFieldsValue({ conditionModelId: undefined, field: undefined, dataType: undefined })
           }}
         />
@@ -286,9 +494,13 @@ export default function ConfigPanel({ open, onClose, node, onUpdate }) {
           onChange={(modelId) => {
             const model = allConditions.find(m => m.id === modelId)
             if (model) {
+              const de = dataElements.find(d => d.id === model.dataElementId)
+              const dictCode = de?.dictCode || null
+              setElementDictCode(dictCode)
               form.setFieldsValue({
                 field: model.code,
                 dataType: model.dataType,
+                dictCode: dictCode || undefined,
               })
             }
           }}
@@ -398,8 +610,9 @@ export default function ConfigPanel({ open, onClose, node, onUpdate }) {
         </>
       ) : selectedOperator === 'dictMatch' ? (
         <>
-          <DictSelect name="dictCode" label="允许关键词字典" />
+          <DictSelect name="dictCode" label="匹配字典" />
           <DictAttrSelect name="dictAttr" />
+          <DictItemPicker />
         </>
       ) : selectedOperator === 'dataCheck' ? (
         <>
@@ -581,6 +794,17 @@ export default function ConfigPanel({ open, onClose, node, onUpdate }) {
             <Input placeholder="如: 2" />
           </Form.Item>
         </>
+      ) : elementDictCode ? (
+        <>
+          <Form.Item name="dictAttr" label="匹配属性" style={{ marginTop: -8 }}>
+            <Select placeholder="默认名称" allowClear>
+              <Option value="itemName">名称</Option>
+              <Option value="itemCode">编码</Option>
+              <Option value="itemValue">值</Option>
+            </Select>
+          </Form.Item>
+          <DictValuePicker dictCode={elementDictCode} />
+        </>
       ) : (
         <Form.Item name="value" label="条件值" rules={[{ required: true }]}>
           <Input placeholder="如: 65" />
@@ -679,10 +903,28 @@ export default function ConfigPanel({ open, onClose, node, onUpdate }) {
       {renderRcDetailCard()}
 
       <Form.Item name="content" label="结果内容">
-        <Input.TextArea placeholder="输入需要返回的结果信息。选择结果配置后将自动填入默认值" rows={3} />
+        <Input.TextArea placeholder="输入需要返回的结果信息。可用 ${fieldName} 引用条件字段的实际值" rows={3} />
       </Form.Item>
+      {conditionFields && conditionFields.length > 0 && (
+        <div style={{ marginBottom: 8, fontSize: 13 }}>
+          <div style={{ color: '#888', marginBottom: 4 }}>可用变量（点击插入）：</div>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+            {conditionFields.map(f => (
+              <Tag
+                key={f.field}
+                color="processing"
+                style={{ cursor: 'pointer', fontSize: 12 }}
+                onClick={() => {
+                  const ta = form.getFieldValue('content') || ''
+                  form.setFieldsValue({ content: ta + '${' + f.field + '}' })
+                }}
+              >{`${f.field}`}</Tag>
+            ))}
+          </div>
+        </div>
+      )}
       <div style={{ color: '#888', fontSize: 13, marginBottom: 16 }}>
-        提示：请前往系统菜单的"结果管理"中预先配置结果属性。
+        提示：请前往系统菜单的"结果管理"中预先配置结果属性。在结果内容中使用 <Tag style={{ fontSize: 11, cursor: 'pointer' }} color="default">{'${fieldName}'}</Tag> 可在执行时动态插入字段值。
       </div>
     </>
   )

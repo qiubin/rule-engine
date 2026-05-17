@@ -90,7 +90,7 @@ public class RuleExecutor {
             response.put("matched", firedRules > 0);
             response.put("results", result.values());
             response.put("parameters", parameters);
-            
+
             return response;
         } catch (Exception e) {
             log.error("规则 [{}] 执行异常", ruleCode, e);
