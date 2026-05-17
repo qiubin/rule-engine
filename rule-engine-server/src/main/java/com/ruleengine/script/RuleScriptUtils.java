@@ -640,6 +640,7 @@ public class RuleScriptUtils {
         return value >= min && value <= max;
     }
 
+<<<<<<< HEAD
     /**
      * 范围判断（带类型安全）：将任意类型值转为 double 后判断是否在 [min, max] 范围内
      * 值为 null、非数字或解析失败时返回 false
@@ -675,4 +676,6 @@ public class RuleScriptUtils {
         }
     }
 
+=======
+>>>>>>> 76764b8641db66cf64db8caf2ccfcd370b28e640
 }
