@@ -235,30 +235,33 @@ function FlowCanvas() {
 
   // 解析画布中的条件字段
   const parseConditionFields = () => {
-    const fields = []
-    const seen = new Set()
+    const fieldMap = new Map() // field -> { field, dataType, label, operators: Set }
+    const upsert = (field, dataType, label, operator) => {
+      if (!field) return
+      if (!fieldMap.has(field)) {
+        fieldMap.set(field, { field, dataType, label, operators: new Set() })
+      }
+      if (operator) fieldMap.get(field).operators.add(operator)
+    }
     nodes.forEach(node => {
       if (node.type === 'condition' && node.data?.conditionConfig) {
         const cfg = node.data.conditionConfig
-        const field = cfg.field
-        if (field && !seen.has(field)) {
-          seen.add(field)
-          fields.push({ field, dataType: cfg.dataType, label: node.data.label || field })
-        }
+        upsert(cfg.field, cfg.dataType, node.data.label || cfg.field, cfg.operator)
         // fieldCompare 需要额外输入字段A和字段B
         if (cfg.operator === 'fieldCompare') {
-          if (cfg.value && !seen.has(cfg.value)) {
-            seen.add(cfg.value)
-            fields.push({ field: cfg.value, dataType: cfg.dataType, label: cfg.value + ' (字段A)' })
-          }
-          if (cfg.extraValue1 && !seen.has(cfg.extraValue1)) {
-            seen.add(cfg.extraValue1)
-            fields.push({ field: cfg.extraValue1, dataType: cfg.dataType, label: cfg.extraValue1 + ' (字段B)' })
-          }
+          upsert(cfg.value, cfg.dataType, cfg.value + ' (字段A)', cfg.operator)
+          upsert(cfg.extraValue1, cfg.dataType, cfg.extraValue1 + ' (字段B)', cfg.operator)
         }
       }
     })
-    return fields
+    // 仅当字段所有用到的操作符都是空值/非空校验时，才允许留空
+    const BLANK_OPS = new Set(['isBlank', 'isNotBlank'])
+    return Array.from(fieldMap.values()).map(f => ({
+      field: f.field,
+      dataType: f.dataType,
+      label: f.label,
+      optional: f.operators.size > 0 && Array.from(f.operators).every(op => BLANK_OPS.has(op)),
+    }))
   }
 
   const handleExecute = async () => {
@@ -474,16 +477,28 @@ function FlowCanvas() {
           {execFields.length === 0 ? (
             <div style={{ color: '#999', padding: 20, textAlign: 'center' }}>该画布中未配置条件节点，无需输入参数</div>
           ) : (
-            execFields.map(f => (
-              <Form.Item
-                key={f.field}
-                name={f.field}
-                label={`${f.label} (${f.dataType || 'STRING'})`}
-                rules={[{ required: true, message: `请输入 ${f.label}` }]}
-              >
-                <Input placeholder={`请输入 ${f.label}`} />
-              </Form.Item>
-            ))
+            <>
+              {execFields.some(f => f.optional) && (
+                <div style={{ color: '#999', fontSize: 12, marginBottom: 12 }}>
+                  提示：标记为「可空」的字段对应「空值校验/非空校验」操作符，留空即测试空值场景
+                </div>
+              )}
+              {execFields.map(f => (
+                <Form.Item
+                  key={f.field}
+                  name={f.field}
+                  label={
+                    <span>
+                      {f.label} ({f.dataType || 'STRING'})
+                      {f.optional && <Tag color="blue" style={{ marginLeft: 8 }}>可空</Tag>}
+                    </span>
+                  }
+                  rules={f.optional ? [] : [{ required: true, message: `请输入 ${f.label}` }]}
+                >
+                  <Input placeholder={f.optional ? `请输入 ${f.label}（留空表示空值）` : `请输入 ${f.label}`} allowClear={f.optional} />
+                </Form.Item>
+              ))}
+            </>
           )}
         </Form>
       </Modal>

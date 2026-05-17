@@ -380,6 +380,14 @@ public class RuleScriptUtils {
     }
 
     /**
+     * 非空校验：判断输入值是否非 null 且非空白字符串，命中时返回TRUE。
+     * 应用场景：必填项已填写、字段已记录。
+     */
+    public static boolean isNotBlank(Object v) {
+        return !isBlank(v);
+    }
+
+    /**
      * 8. 文本相似度：基于 HanLP 分词的 Jaccard 系数判断两段文本相似度是否超过阈值，命中时返回TRUE。
      * 优先使用 HanLP 分词，若不可用则自动回退到字符二元组。
      * 应用场景：病程记录雷同判断（R56/R65/R73/R74/R75）。
@@ -622,6 +630,48 @@ public class RuleScriptUtils {
             default:
                 log.warn("STRING_EQ 只支持 == 和 !=, 当前: {}", op);
                 return false;
+        }
+    }
+
+    /**
+     * 范围判断：value 是否在 [min, max] 范围内
+     */
+    public static boolean isBetween(double value, double min, double max) {
+        return value >= min && value <= max;
+    }
+
+    /**
+     * 范围判断（带类型安全）：将任意类型值转为 double 后判断是否在 [min, max] 范围内
+     * 值为 null、非数字或解析失败时返回 false
+     */
+    public static boolean isBetween(Object value, double min, double max) {
+        if (value == null) return false;
+        try {
+            double v = Double.parseDouble(String.valueOf(value).trim());
+            boolean result = v >= min && v <= max;
+            log.debug("isBetween({}, {}, {}) = {}", v, min, max, result);
+            return result;
+        } catch (NumberFormatException e) {
+            log.debug("isBetween: 无法解析为数字: {}", value);
+            return false;
+        }
+    }
+
+    /**
+     * 范围判断（全字符串入参）：方便从 DRL 直接传入字符串避免数值解析错误
+     */
+    public static boolean isBetween(Object value, String minStr, String maxStr) {
+        if (value == null) return false;
+        try {
+            double v = Double.parseDouble(String.valueOf(value).trim());
+            double min = Double.parseDouble(minStr.trim());
+            double max = Double.parseDouble(maxStr.trim());
+            boolean result = v >= min && v <= max;
+            log.debug("isBetween({}, {}, {}) = {}", v, min, max, result);
+            return result;
+        } catch (NumberFormatException e) {
+            log.debug("isBetween 参数无法解析: value={}, min={}, max={}", value, minStr, maxStr);
+            return false;
         }
     }
 

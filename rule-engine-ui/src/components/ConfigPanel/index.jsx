@@ -552,6 +552,7 @@ export default function ConfigPanel({ open, onClose, node, onUpdate, conditionFi
           <OptGroup label="质控计算符">
             <Option value="lengthCheck">长度校验 lengthCheck</Option>
             <Option value="isBlank">空值校验 isBlank</Option>
+            <Option value="isNotBlank">非空校验 isNotBlank</Option>
             <Option value="similarity">相似度比对 similarity</Option>
             <Option value="arrayLength">集合长度 arrayLength</Option>
             <Option value="arrayIntersect">集合交集 arrayIntersect</Option>
@@ -668,7 +669,7 @@ export default function ConfigPanel({ open, onClose, node, onUpdate, conditionFi
             <Input placeholder="如: 10" type="number" />
           </Form.Item>
         </>
-      ) : selectedOperator === 'isBlank' ? (
+      ) : selectedOperator === 'isBlank' || selectedOperator === 'isNotBlank' ? (
         <></>
       ) : selectedOperator === 'similarity' ? (
         <>

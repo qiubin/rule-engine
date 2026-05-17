@@ -68,53 +68,53 @@ export default function RuleExecute() {
     try {
       const canvas = JSON.parse(rule.canvasData)
       const nodes = canvas.nodes || []
-      const fields = []
-      const seen = new Set()
+      const fieldMap = new Map() // field -> { field, dataType, label, operators: Set }
+      const upsert = (field, dataType, label, operator) => {
+        if (!field) return
+        if (!fieldMap.has(field)) {
+          fieldMap.set(field, { field, dataType, label, operators: new Set() })
+        }
+        if (operator) fieldMap.get(field).operators.add(operator)
+      }
       nodes.forEach(node => {
         if (node.type === 'condition' && node.data?.conditionConfig) {
           const cfg = node.data.conditionConfig
-          const field = cfg.field
-          const dataType = cfg.dataType
-          const label = node.data.label || field
-          if (field && !seen.has(field)) {
-            seen.add(field)
-            fields.push({ field, dataType, label })
-          }
-          // fieldCompare 需要额外输入字段A和字段B
+          upsert(cfg.field, cfg.dataType, node.data.label || cfg.field, cfg.operator)
           if (cfg.operator === 'fieldCompare') {
-            if (cfg.value && !seen.has(cfg.value)) {
-              seen.add(cfg.value)
-              fields.push({ field: cfg.value, dataType, label: cfg.value + ' (字段A)' })
-            }
-            if (cfg.extraValue1 && !seen.has(cfg.extraValue1)) {
-              seen.add(cfg.extraValue1)
-              fields.push({ field: cfg.extraValue1, dataType, label: cfg.extraValue1 + ' (字段B)' })
-            }
+            upsert(cfg.value, cfg.dataType, cfg.value + ' (字段A)', cfg.operator)
+            upsert(cfg.extraValue1, cfg.dataType, cfg.extraValue1 + ' (字段B)', cfg.operator)
           }
         }
       })
-      return fields
+      const BLANK_OPS = new Set(['isBlank', 'isNotBlank'])
+      return Array.from(fieldMap.values()).map(f => ({
+        field: f.field,
+        dataType: f.dataType,
+        label: f.label,
+        optional: f.operators.size > 0 && Array.from(f.operators).every(op => BLANK_OPS.has(op)),
+      }))
     } catch (e) {
       return []
     }
   }
 
-  // 合并所有选中规则的条件字段（去重）
+  // 合并所有选中规则的条件字段（去重）；任一规则将该字段当必填，则合并后也必填
   const computeBatchParamFields = (ruleIds) => {
-    const fields = []
-    const seen = new Set()
+    const merged = new Map()
     ruleIds.forEach(id => {
       const rule = rules.find(r => r.id === id)
       if (rule) {
         parseCanvasParams(rule).forEach(f => {
-          if (!seen.has(f.field)) {
-            seen.add(f.field)
-            fields.push(f)
+          if (!merged.has(f.field)) {
+            merged.set(f.field, { ...f })
+          } else if (!f.optional) {
+            // 一旦有规则要求必填，整体就必填
+            merged.get(f.field).optional = false
           }
         })
       }
     })
-    return fields
+    return Array.from(merged.values())
   }
 
   useEffect(() => {
@@ -370,8 +370,14 @@ export default function RuleExecute() {
                         <Form.Item
                           key={f.field}
                           name={f.field}
-                          label={<span>{f.label}<Tag size="small" style={{ marginLeft: 4 }}>{f.dataType}</Tag></span>}
-                          rules={[{ required: true, message: `请输入 ${f.label}` }]}
+                          label={
+                            <span>
+                              {f.label}
+                              <Tag size="small" style={{ marginLeft: 4 }}>{f.dataType}</Tag>
+                              {f.optional && <Tag color="blue" size="small">可空</Tag>}
+                            </span>
+                          }
+                          rules={f.optional ? [] : [{ required: true, message: `请输入 ${f.label}` }]}
                           style={{ marginRight: 24, marginBottom: 16, minWidth: 200 }}
                         >
                           {renderInputByType(f)}
@@ -463,8 +469,14 @@ export default function RuleExecute() {
                     <Form.Item
                       key={f.field}
                       name={f.field}
-                      label={<span>{f.label}<Tag size="small" style={{ marginLeft: 4 }}>{f.dataType}</Tag></span>}
-                      rules={[{ required: true, message: `请输入 ${f.label}` }]}
+                      label={
+                        <span>
+                          {f.label}
+                          <Tag size="small" style={{ marginLeft: 4 }}>{f.dataType}</Tag>
+                          {f.optional && <Tag color="blue" size="small">可空</Tag>}
+                        </span>
+                      }
+                      rules={f.optional ? [] : [{ required: true, message: `请输入 ${f.label}` }]}
                       style={{ marginRight: 24, marginBottom: 16, minWidth: 200 }}
                     >
                       {renderInputByType(f)}

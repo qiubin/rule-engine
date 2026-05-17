@@ -253,7 +253,7 @@ public class DrlCompiler {
         } else if ("<=".equals(operator)) {
             return String.format("$param.get(\"%s\") != null && Double.parseDouble(String.valueOf($param.get(\"%s\"))) <= %s", field, field, valueStr);
         } else if ("between".equals(operator)) {
-            return String.format("$param.get(\"%s\") != null && Double.parseDouble(String.valueOf($param.get(\"%s\"))) >= %s && Double.parseDouble(String.valueOf($param.get(\"%s\"))) <= %s", field, field, valueStr, field, extraValue1);
+            return String.format("RuleScriptUtils.isBetween($param.get(\"%s\"), \"%s\", \"%s\")", field, valueStr, extraValue1);
         } else if ("contains".equals(operator)) {
             return String.format("$param.get(\"%s\") != null && String.valueOf($param.get(\"%s\")).contains(\"%s\")", field, field, valueStr);
         } else if ("arrayContains".equals(operator)) {
@@ -314,6 +314,8 @@ public class DrlCompiler {
             return String.format("RuleScriptUtils.lengthCheck((String)$param.get(\"%s\"), \"%s\", Integer.parseInt(\"%s\"))", field, op, threshold);
         } else if ("isBlank".equals(operator)) {
             return String.format("RuleScriptUtils.isBlank($param.get(\"%s\"))", field);
+        } else if ("isNotBlank".equals(operator)) {
+            return String.format("RuleScriptUtils.isNotBlank($param.get(\"%s\"))", field);
         } else if ("similarity".equals(operator)) {
             String otherField = valueStr;
             String threshold = extraValue1;
