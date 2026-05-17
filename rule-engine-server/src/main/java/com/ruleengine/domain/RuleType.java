@@ -30,6 +30,9 @@ public class RuleType {
     @Column(name = "description", length = 512)
     private String description;
 
+    @Column(name = "parent_id")
+    private Long parentId;
+
     @Column(name = "sort_order")
     private Integer sortOrder = 0;
 

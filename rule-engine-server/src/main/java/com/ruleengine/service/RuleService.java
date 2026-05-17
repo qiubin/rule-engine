@@ -15,6 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -39,6 +40,13 @@ public class RuleService {
 
     public List<Rule> findByRuleTypeId(Long ruleTypeId) {
         return ruleRepository.findByRuleTypeId(ruleTypeId);
+    }
+
+    public List<Rule> findByRuleTypeIds(List<Long> ruleTypeIds) {
+        if (ruleTypeIds == null || ruleTypeIds.isEmpty()) {
+            return Collections.emptyList();
+        }
+        return ruleRepository.findByRuleTypeIdIn(ruleTypeIds);
     }
 
     public Rule findById(Long id) {

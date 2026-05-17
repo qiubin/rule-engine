@@ -56,6 +56,14 @@ public class AccessLogController {
         return ResponseEntity.ok().build();
     }
 
+    @DeleteMapping("/clear")
+    public ResponseEntity<Integer> clearByTimeRange(
+            @RequestParam String startTime,
+            @RequestParam String endTime) {
+        int deleted = service.deleteByTimeRange(startTime, endTime);
+        return ResponseEntity.ok(deleted);
+    }
+
     private String getClientIp(HttpServletRequest request) {
         String ip = request.getHeader("X-Forwarded-For");
         if (ip == null || ip.isEmpty() || "unknown".equalsIgnoreCase(ip)) {

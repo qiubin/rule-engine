@@ -12,6 +12,7 @@ import java.util.Optional;
 public interface RuleRepository extends JpaRepository<Rule, Long> {
     Optional<Rule> findByCode(String code);
     List<Rule> findByRuleTypeId(Long ruleTypeId);
+    List<Rule> findByRuleTypeIdIn(List<Long> ruleTypeIds);
     long countByRuleTypeId(Long ruleTypeId);
     List<Rule> findByStatus(RuleStatus status);
 }

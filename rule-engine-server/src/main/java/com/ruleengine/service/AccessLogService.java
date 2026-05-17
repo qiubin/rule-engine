@@ -61,4 +61,11 @@ public class AccessLogService {
     public void deleteById(Long id) {
         repository.deleteById(id);
     }
+
+    @Transactional
+    public int deleteByTimeRange(String startTime, String endTime) {
+        LocalDateTime st = LocalDateTime.parse(startTime, DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+        LocalDateTime et = LocalDateTime.parse(endTime, DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+        return repository.deleteByAccessTimeBetween(st, et);
+    }
 }

@@ -17,7 +17,15 @@ public class RuleTypeController {
     private final RuleTypeService ruleTypeService;
 
     @GetMapping
-    public ResponseEntity<List<RuleType>> list() {
+    public ResponseEntity<List<RuleType>> list(
+            @RequestParam(required = false) Long parentId,
+            @RequestParam(required = false, defaultValue = "false") boolean flat) {
+        if (flat) {
+            return ResponseEntity.ok(ruleTypeService.findAllFlat());
+        }
+        if (parentId != null) {
+            return ResponseEntity.ok(ruleTypeService.findByParentId(parentId));
+        }
         return ResponseEntity.ok(ruleTypeService.findAll());
     }
 

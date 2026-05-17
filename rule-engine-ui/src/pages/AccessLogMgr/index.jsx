@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
-import { Table, Button, DatePicker, Input, message, Popconfirm } from 'antd'
-import { DeleteOutlined, SearchOutlined, ReloadOutlined } from '@ant-design/icons'
+import { Table, Button, DatePicker, Input, message, Popconfirm, Modal } from 'antd'
+import { DeleteOutlined, SearchOutlined, ReloadOutlined, ClearOutlined } from '@ant-design/icons'
 import axios from 'axios'
 
 const API = '/api/v1/access-logs'
@@ -24,6 +24,10 @@ export default function AccessLogMgr() {
     startTime: null,
     endTime: null,
   })
+  const [clearModalVisible, setClearModalVisible] = useState(false)
+  const [clearStartTime, setClearStartTime] = useState(null)
+  const [clearEndTime, setClearEndTime] = useState(null)
+  const [clearing, setClearing] = useState(false)
 
   const fetchLogs = async (page = 1, pageSize = 20) => {
     setLoading(true)
@@ -89,6 +93,30 @@ export default function AccessLogMgr() {
     } catch (e) {
       message.error('删除失败')
     }
+  }
+
+  const handleClear = async () => {
+    if (!clearStartTime || !clearEndTime) {
+      message.warning('请选择开始时间和结束时间')
+      return
+    }
+    const fmt = (m) =>
+      `${m.year()}-${String(m.month() + 1).padStart(2, '0')}-${String(m.date()).padStart(2, '0')} ${String(m.hour()).padStart(2, '0')}:${String(m.minute()).padStart(2, '0')}:${String(m.second()).padStart(2, '0')}`
+    setClearing(true)
+    try {
+      const res = await axios.delete(`${API}/clear`, {
+        params: { startTime: fmt(clearStartTime), endTime: fmt(clearEndTime) },
+      })
+      message.success(`已清空 ${res.data} 条日志`)
+      setClearModalVisible(false)
+      setClearStartTime(null)
+      setClearEndTime(null)
+      fetchLogs(1, pagination.pageSize)
+      setPagination({ current: 1, pageSize: pagination.pageSize })
+    } catch (e) {
+      message.error('清空失败')
+    }
+    setClearing(false)
   }
 
   const columns = [
@@ -160,6 +188,7 @@ export default function AccessLogMgr() {
         />
         <Button type="primary" icon={<SearchOutlined />} onClick={handleSearch}>查询</Button>
         <Button icon={<ReloadOutlined />} onClick={handleReset}>重置</Button>
+        <Button danger icon={<ClearOutlined />} onClick={() => setClearModalVisible(true)}>清空日志</Button>
       </div>
       <Table
         rowKey="id"
@@ -177,6 +206,37 @@ export default function AccessLogMgr() {
         }}
         onChange={handleTableChange}
       />
+      <Modal
+        title="清空日志"
+        open={clearModalVisible}
+        onCancel={() => {
+          setClearModalVisible(false)
+          setClearStartTime(null)
+          setClearEndTime(null)
+        }}
+        onOk={handleClear}
+        confirmLoading={clearing}
+        okText="确认清空"
+        cancelText="取消"
+      >
+        <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', padding: '16px 0' }}>
+          <DatePicker
+            placeholder="开始时间"
+            value={clearStartTime}
+            onChange={(v) => setClearStartTime(v)}
+            showTime
+            style={{ width: 200 }}
+          />
+          <DatePicker
+            placeholder="结束时间"
+            value={clearEndTime}
+            onChange={(v) => setClearEndTime(v)}
+            showTime
+            style={{ width: 200 }}
+          />
+        </div>
+        <p style={{ color: '#ff4d4f', margin: 0 }}>此操作将删除所选时间范围内的所有访问日志，不可恢复。</p>
+      </Modal>
     </div>
   )
 }

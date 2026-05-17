@@ -20,7 +20,16 @@ public class RuleController {
     private final RuleService ruleService;
 
     @GetMapping
-    public ResponseEntity<List<Rule>> list(@RequestParam(required = false) Long ruleTypeId) {
+    public ResponseEntity<List<Rule>> list(
+            @RequestParam(required = false) Long ruleTypeId,
+            @RequestParam(required = false) String ruleTypeIds) {
+        if (ruleTypeIds != null && !ruleTypeIds.trim().isEmpty()) {
+            List<Long> ids = new ArrayList<>();
+            for (String s : ruleTypeIds.split(",")) {
+                try { ids.add(Long.parseLong(s.trim())); } catch (NumberFormatException ignored) {}
+            }
+            return ResponseEntity.ok(ruleService.findByRuleTypeIds(ids));
+        }
         if (ruleTypeId != null) {
             return ResponseEntity.ok(ruleService.findByRuleTypeId(ruleTypeId));
         }

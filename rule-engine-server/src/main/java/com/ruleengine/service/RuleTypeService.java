@@ -18,7 +18,15 @@ public class RuleTypeService {
     private final RuleRepository ruleRepository;
 
     public List<RuleType> findAll() {
+        return ruleTypeRepository.findByParentIdIsNullOrderBySortOrderAsc();
+    }
+
+    public List<RuleType> findAllFlat() {
         return ruleTypeRepository.findAllByOrderBySortOrderAsc();
+    }
+
+    public List<RuleType> findByParentId(Long parentId) {
+        return ruleTypeRepository.findByParentIdOrderBySortOrderAsc(parentId);
     }
 
     public RuleType findById(Long id) {

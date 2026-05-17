@@ -10,7 +10,8 @@ import ReactFlow, {
   Panel,
 } from 'reactflow'
 import { Button, message, Modal, Input, Select, Form } from 'antd'
-import { SaveOutlined, PlayCircleOutlined, PlusOutlined, DeleteOutlined, ArrowLeftOutlined } from '@ant-design/icons'
+import { SaveOutlined, PlayCircleOutlined, PlusOutlined, DeleteOutlined, ArrowLeftOutlined, ColumnWidthOutlined } from '@ant-design/icons'
+import dagre from 'dagre'
 import { nodeTypes } from '../../components/Nodes'
 import ConfigPanel from '../../components/ConfigPanel'
 import ToolBar from '../../components/ToolBar'
@@ -316,6 +317,29 @@ function FlowCanvas() {
     setIsConfigOpen(false)
   }
 
+  const handleAutoLayout = useCallback(() => {
+    const g = new dagre.graphlib.Graph()
+    g.setDefaultEdgeLabel(() => ({}))
+    g.setGraph({ rankdir: 'LR', nodesep: 50, ranksep: 100 })
+
+    const nodeWidth = 172
+    const nodeHeight = 60
+    nodes.forEach(n => g.setNode(n.id, { width: nodeWidth, height: nodeHeight }))
+    edges.forEach(e => g.setEdge(e.source, e.target))
+
+    dagre.layout(g)
+
+    setNodes(nds => nds.map(n => {
+      const node = g.node(n.id)
+      if (!node) return n
+      return {
+        ...n,
+        position: { x: node.x - nodeWidth / 2, y: node.y - nodeHeight / 2 }
+      }
+    }))
+    message.success('节点已自动排列')
+  }, [nodes, edges, setNodes])
+
   const goBack = () => {
     window.location.href = '/?page=types'
   }
@@ -341,6 +365,7 @@ function FlowCanvas() {
               {currentRule && <span style={{ background: '#f0f0f0', padding: '4px 12px', borderRadius: 4, fontSize: 13 }}>
                 当前规则: {currentRule.name} ({currentRule.code})
               </span>}
+              <Button icon={<ColumnWidthOutlined />} onClick={handleAutoLayout}>一键排列</Button>
               <Button type="primary" icon={<SaveOutlined />} onClick={handleSaveCanvas}>保存画布</Button>
               <Button icon={<PlayCircleOutlined />} onClick={handleExecute}>测试执行</Button>
               {selectedNode && (

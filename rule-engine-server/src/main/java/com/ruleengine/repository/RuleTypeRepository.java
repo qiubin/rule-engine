@@ -11,4 +11,6 @@ import java.util.Optional;
 public interface RuleTypeRepository extends JpaRepository<RuleType, Long> {
     Optional<RuleType> findByCode(String code);
     List<RuleType> findAllByOrderBySortOrderAsc();
+    List<RuleType> findByParentIdOrderBySortOrderAsc(Long parentId);
+    List<RuleType> findByParentIdIsNullOrderBySortOrderAsc();
 }
