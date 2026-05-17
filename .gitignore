@@ -23,6 +23,7 @@ rule-engine-ui/.env.*.local
 # Logs
 *.log
 start.log
+*_log.txt
 
 # Misc
 *.class
