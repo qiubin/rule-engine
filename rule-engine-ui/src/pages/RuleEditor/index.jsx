@@ -125,6 +125,17 @@ function FlowCanvas() {
           })
         }
       })
+      // 修正 id 计数器，避免新拖入的节点与已有节点 ID 冲突
+      let maxNum = 0
+      loadedNodes.forEach(n => {
+        const m = n.id && n.id.match(/^node_(\d+)$/)
+        if (m) {
+          const num = parseInt(m[1], 10)
+          if (num > maxNum) maxNum = num
+        }
+      })
+      id = maxNum + 1
+
       setNodes(loadedNodes)
       setEdges(loadedEdges)
     } catch (e) {
