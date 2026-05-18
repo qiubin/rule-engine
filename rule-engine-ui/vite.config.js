@@ -1,8 +1,14 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
+import path from 'path'
 
 export default defineConfig({
   plugins: [react()],
+  resolve: {
+    alias: {
+      dagre: path.resolve(process.cwd(), 'node_modules/dagre/dist/dagre.js'),
+    }
+  },
   server: {
     port: 3001,
     proxy: {
